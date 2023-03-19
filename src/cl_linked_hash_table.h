@@ -80,26 +80,9 @@ struct DictItem {
     void * value;
 };
 
-/*
-// this can probably just be replaced by a generic node from my containerlibs
-struct DoubleLinkedHashNode {
-    const void * key;
-    void * value;
-    DoubleLinkedHashNode * next_inorder; // next in linked list of HashTable Keys as inserted
-    DoubleLinkedHashNode * next_inhash; // next in linked list of HashTable Keys as inserted that have the same hash
-    DoubleLinkedHashNode * prev_inorder; // previous in linked list of HashTable Keys as inserted
-};
-*/
-
 DictItem * DictItem_new(void * key, void * value);
 void DictItem_init(DictItem * di, void * key, void * value);
 void DictItem_del(DictItem * di);
-
-/*
-DoubleLinkedHashNode * DoubleLinkedHashNode_new(void * key, void * value, DoubleLinkedHashNode * next_inhash, DoubleLinkedHashNode * next_inorder, DoubleLinkedHashNode * prev_inorder);
-void DoubleLinkedHashNode_init(DoubleLinkedHashNode * node, void * key, void * value, DoubleLinkedHashNode * next_inhash, DoubleLinkedHashNode * next_inorder, DoubleLinkedHashNode * prev_inorder);
-void DoubleLinkedHashNode_del(DoubleLinkedHashNode * node);
-*/
 
 LinkedHashTable * LinkedHashTable_new(hash_t (*hash) (const void *, size_t), int (*comp) (const void *, const void *), size_t capacity, float max_load_factor, unsigned int flags, int narg_pairs, ...);
 void LinkedHashTable_init(LinkedHashTable * hash_table, hash_t (*hash) (const void *, size_t), int (*comp) (const void *, const void *), size_t capacity, float max_load_factor, NodeAttributes * NA);
@@ -110,9 +93,6 @@ void * LinkedHashTable_get(LinkedHashTable * hash_table, void * key);
 bool LinkedHashTable_contains(LinkedHashTable * hash_table, void * key);
 size_t LinkedHashTable_size(LinkedHashTable * hash_table);
 size_t LinkedHashTable_capacity(LinkedHashTable * hash_table);
-
-// removes and destroys the node identified by key
-// copy this to pop and replace remove algorithm with pop and ignoring the output
 int LinkedHashTable_remove(LinkedHashTable * hash_table, void * key);
 void * LinkedHashTable_pop(LinkedHashTable * hash_table, void * key);
 int LinkedHashTable_resize(LinkedHashTable * hash_table, size_t capacity);
