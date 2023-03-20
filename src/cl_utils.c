@@ -70,16 +70,6 @@ enum cl_status cl_reverse_buffered(void * start, void * end, size_t size, void *
 
 /******************************** COMPARISON *********************************/
 
-// create a generic compare function pointer name
-#define compare(T1, T2) compare_##T1##_##T2
-// define the function pointer
-#define define_numeric_compare(T1, T2)	\
-int compare(T1, T2)(const void* a, const void* b) { 	\
-	if ((*(T1*)a) < (*(T2*)b)) return -1;	\
-	if ((*(T1*)a) > (*(T2*)b)) return 1;	\
-	return 0;							\
-}
-
 /********************************* NUMERICS **********************************/
 
 // inspired by Implementation 5 https://stackoverflow.com/questions/4475996/given-prime-number-n-compute-the-next-prime

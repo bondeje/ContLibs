@@ -9,6 +9,8 @@
 // TODO: eventually use macros to set the hash sizes so that user can replace hash function with a different output size
 // TODO: incorporate a randomized hash seed for strings, "salting": see http://ocert.org/advisories/ocert-2011-003.html, referenced from https://docs.python.org/3.8/reference/datamodel.html#object.__hash__
 
+// TODO: incorporate optional behavior into a flag parameter
+
 #ifndef LINKED_HASH_TABLE_LOAD_FACTOR 
 #define LINKED_HASH_TABLE_LOAD_FACTOR .75
 #endif

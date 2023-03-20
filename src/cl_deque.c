@@ -292,8 +292,8 @@ int Deque_resize(Deque * deq, float factor) {
 // this creates a shallow copy of the Deque. Elements are shared 
 Deque * Deque_copy_iterator(DequeIterator * deq_iter) {
 	
-	Deque * deq_out = Deque_new(CL_DEQUE_DEFAULT_CAPACITY);
-	for_each(void*, el, DequeIterator, deq_iter) {
+	Deque * deq_out = Deque_new(deq_iter->deq->size);
+	for_each(void, el, DequeIterator, deq_iter) {
 		Deque_push_back(deq_out, el);
 	}
 	
@@ -302,8 +302,8 @@ Deque * Deque_copy_iterator(DequeIterator * deq_iter) {
 
 // this creates a shallow copy of the Deque. Elements are shared 
 Deque * Deque_copy(Deque * deq) {
-	Deque * deq_out = Deque_new(CL_DEQUE_DEFAULT_CAPACITY);
-	for_each(void*, el, Deque, deq) {
+	Deque * deq_out = Deque_new(deq->size);
+	for_each(void, el, Deque, deq) {
 		Deque_push_back(deq_out, el);
 	}
 	return deq_out;
@@ -392,7 +392,7 @@ void * Deque_get(Deque * deq, size_t index) {
 		DEBUG_PRINT(("Index out of bounds error...\n"));
 		return NULL;
 	}
-	return deq->data[_Deque_index_map_fwd(deq, index)];
+	return deq->data[Deque_index_map_fwd(deq, index)];
 }
 
 int Deque_insert(Deque * deq, size_t index, void * val) {
@@ -422,7 +422,7 @@ int Deque_insert(Deque * deq, size_t index, void * val) {
 		}
 		deq->data[tail] = val;
 	} else {
-		size_t ptr_index = _Deque_index_map_fwd(deq, index);
+		size_t ptr_index = Deque_index_map_fwd(deq, index);
 		size_t src_index;
 		// note since src_index 
 		unsigned char second_half = index >= deq->size/2;
@@ -497,7 +497,7 @@ void * Deque_remove(Deque * deq, size_t index) {
 		val = deq->data[tail];
 		deq->data[tail] = NULL;
 	} else {
-		size_t ptr_index = _Deque_index_map_fwd(deq, index), end_index;
+		size_t ptr_index = Deque_index_map_fwd(deq, index), end_index;
 		val = deq->data[ptr_index];
 		unsigned char second_half = index >= deq->size/2;
 		if (second_half ^ deq->reversed) { // move elements from [ptr_index + 1, head/tail] down 1 depending on deq->reversed
@@ -544,7 +544,7 @@ void * Deque_remove(Deque * deq, size_t index) {
 }
 
 // index must be smaller than deq->size; there is no protection if it is larger
-size_t Deque_index_map_fwd(Deque * deq, size_t index) {
+static size_t Deque_index_map_fwd(Deque * deq, size_t index) {
 	ASSERT(index < deq->size, "index out of bounds error in Deque_index_map_fwd. Attempted to get index %zu in container of size %zu", index, deq->size);
 	if (deq->reversed) {
 		if (index > deq->head) {
@@ -575,34 +575,34 @@ DequeIterator * Deque_slice(Deque * deq, size_t start, size_t stop, long long st
 	return deq_iter;
 }
 
-inline size_t Deque_size(Deque * deq) {
+size_t Deque_size(Deque * deq) {
     return deq->size;
 }
 
-inline bool Deque_is_empty(Deque * deq) {
+bool Deque_is_empty(Deque * deq) {
     return deq->size == 0;
 }
 
-inline enum deque_status Deque_push_front(Deque * deq, void * val) {
+enum deque_status Deque_push_front(Deque * deq, void * val) {
     return Deque_insert(deq, 0, val);
 }
 
-inline enum deque_status Deque_push_back(Deque * deq, void * val) {
+enum deque_status Deque_push_back(Deque * deq, void * val) {
     return Deque_insert(deq, deq->size-1, val);
 }
 
-inline void * Deque_pop_front(Deque * deq) {
+void * Deque_pop_front(Deque * deq) {
     return Deque_remove(deq, 0);
 }
 
-inline void * Deque_pop_back(Deque * deq) {
+void * Deque_pop_back(Deque * deq) {
     return Deque_remove(deq, deq->size-1);
 }
 
-inline void * Deque_peek_front(Deque * deq) {
+void * Deque_peek_front(Deque * deq) {
     return Deque_get(deq, 0);
 }
 
-inline void * Deque_peek_back(Deque * deq) {
+void * Deque_peek_back(Deque * deq) {
     return Deque_get(deq, deq->size-1);
 }

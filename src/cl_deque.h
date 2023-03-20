@@ -50,8 +50,8 @@ Deque * Deque_new_from_array(void * arr, size_t num, size_t size);
 void Deque_init(Deque * deq);
 void Deque_del(Deque * deq);
 void Deque_reverse(Deque * deq);
-inline size_t Deque_size(Deque * deq);
-inline bool Deque_is_empty(Deque * deq);
+size_t Deque_size(Deque * deq);
+bool Deque_is_empty(Deque * deq);
 size_t Deque_for_each(Deque * deq, int (*func)(void *, void *), void * func_input);
 enum deque_status Deque_resize(Deque * deq, float factor);
 Deque * Deque_copy_iterator(DequeIterator *);
@@ -64,17 +64,15 @@ void DequeIterator_init(DequeIterator * deq_iter, Deque * deq);
 void DequeIterator_del(DequeIterator * deq_iter);
 void * DequeIterator_next(DequeIterator * deq_iter);
 
-// private?
-inline void * Deque_peek_front(Deque * deq);
-inline void * Deque_peek_back(Deque * deq);
+void * Deque_peek_front(Deque * deq);
+void * Deque_peek_back(Deque * deq);
 void * Deque_get(Deque * deq, size_t index);
-inline enum deque_status Deque_push_front(Deque * deq, void * val);
-inline enum deque_status Deque_push_back(Deque * deq, void * val);
+enum deque_status Deque_push_front(Deque * deq, void * val);
+enum deque_status Deque_push_back(Deque * deq, void * val);
 enum deque_status Deque_insert(Deque * deq, size_t ptr_index, void * val);
-inline void * Deque_pop_front(Deque * deq);
-inline void * Deque_pop_back(Deque * deq);
+void * Deque_pop_front(Deque * deq);
+void * Deque_pop_back(Deque * deq);
 void * Deque_remove(Deque * deq, size_t index);
-size_t Deque_index_map_fwd(Deque * deq, size_t index);
 DequeIterator * Deque_slice(Deque *, size_t, size_t, long long);
 
 // TODO: provide backward version implementation of _Deque_index_map_fwd

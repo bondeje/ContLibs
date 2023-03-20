@@ -63,4 +63,4 @@ size_t SliceIterator_next(SliceIterator * sl_iter);
 
 enum iterator_status SliceIterator_stop(SliceIterator * sl_iter);
 
-#endif CL_SLICE_H
+#endif // CL_SLICE_H

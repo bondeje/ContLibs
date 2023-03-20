@@ -15,6 +15,7 @@
 #define NEXT_INHASH PARENT
 
 #define REQUIRED_NODE_FLAGS (Node_flag(KEY) | Node_flag(VALUE) | Node_flag(PARENT) | Node_flag(LEFT) | Node_flag(RIGHT))
+// TODO: replace with a default NodeAttributes, DefaultNode at file scope
 #define DEFAULT_NODE Node_new(NA, 5, Node_attr(VALUE), NULL, Node_attr(KEY), NULL, Node_attr(PREV_INORDER), NULL, Node_attr(NEXT_INORDER), NULL, Node_attr(NEXT_INHASH), NULL)
 
 // set hash to NULL makes keys interpreted
@@ -185,8 +186,8 @@ LinkedHashTable * LinkedHashTable_new(hash_t (*hash) (const void *, size_t), int
         max_load_factor = LINKED_HASH_TABLE_LOAD_FACTOR;
     }
 
+    // TODO: encapsulate the following five lines for the case of flags > 0. For flags == 0, use a DEFAULT_NODE_ATTRIBUTES. See e.g. cl_array_binary_tree.c
     flags |= REQUIRED_NODE_FLAGS; // must have these flag minimum
-
     va_list args;
     va_start(args, narg_pairs);
     NodeAttributes * NA = vNodeAttributes_new(flags, narg_pairs, args);

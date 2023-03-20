@@ -55,7 +55,7 @@
 #define cl_reverse(...) GET_CL_REVERSE_MACRO(__VA_ARGS__, cl_reverse4, cl_reverse3, UNUSED)(__VA_ARGS__)
 
 //********************************************** __VA_ARGS__ PARSERS /
-/*
+
 #define EVERY_ODD1(ODD1,...) ODD1
 #define EVERY_ODD2(ODD1,EVEN1,...) ODD1, EVERY_ODD1(__VA_ARGS__)
 #define EVERY_ODD3(ODD1,EVEN1,...) ODD1, EVERY_ODD2(__VA_ARGS__)
@@ -103,7 +103,6 @@
 
 #define GET_DECLARATION_LIST_MACRO(_1,_2,_3,_4,_5,_6,_7,_8,_9,_10,_11,_12,_13,_14,_15,_16,DECLARATION_LIST_MACRO,...) DECLARATION_LIST_MACRO
 #define DECLARATION_LIST(...) GET_DECLARATION_LIST_MACRO(__VA_ARGS__, DECLARATION_LIST8, DECLARATION_LIST8, DECLARATION_LIST7, DECLARATION_LIST7, DECLARATION_LIST6, DECLARATION_LIST6, DECLARATION_LIST5, DECLARATION_LIST5, DECLARATION_LIST4, DECLARATION_LIST4, DECLARATION_LIST3, DECLARATION_LIST3, DECLARATION_LIST2, DECLARATION_LIST2, DECLARATION_LIST1, DECLARATION_LIST1, UNUSED)(__VA_ARGS__)
-*/
 
 // typedefs so that some of our primitives have single-token identifiers
 typedef unsigned char uchar;
@@ -143,10 +142,10 @@ int cl_reverse_buffered(void * start, void * end, size_t size, void * buf);
 /******************************** COMPARISON *********************************/
 
 // create a generic compare function pointer name
-#define compare(T1, T2) compare_##T1##_##T2
+#define compare_(T1, T2) compare_##T1##_##T2
 // define the function pointer
 #define define_numeric_compare(T1, T2)	\
-int compare(T1, T2)(const void* a, const void* b) { 	\
+int compare_(T1, T2)(const void* a, const void* b) { 	\
 	if ((*(T1*)a) < (*(T2*)b)) return -1;	\
 	if ((*(T1*)a) > (*(T2*)b)) return 1;	\
 	return 0;							\
