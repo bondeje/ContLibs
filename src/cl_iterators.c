@@ -1,6 +1,6 @@
 #include "iterators.h"
 
-void iterative_array_destroy(void ** obj, size_t num) {
+void iterative_array_del(void ** obj, size_t num) {
     for (size_t i = 0; i < num; i++) {
         ITERATOR_FREE(obj[i]);
     }

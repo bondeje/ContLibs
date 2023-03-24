@@ -251,60 +251,50 @@ for (insttype * inst = (insttype *) objtype##Iterator_next(objtype##_##inst##_it
 objtype##Iterator * objtype##_##inst##_iter = objtype##Iterator_iter(__VA_ARGS__);	\
 for (struct {size_t i; insttype * val;} inst = { 0, (insttype *) objtype##Iterator_next(objtype##_##inst##_iter)}; !objtype##Iterator_stop(objtype##_##inst##_iter); inst.i++, inst.val = (insttype *) objtype##Iterator_next(objtype##_##inst##_iter))
 
-#define RESIZE_REALLOC(result, obj, elem_type, num)                                 \
+#define RESIZE_REALLOC(result, elem_type, obj, num)                                 \
 { /* encapsulate to ensure temp_obj can be reused */                                \
-elem_type* temp_obj = (elem_type*) ITERATOR_REALLOC(obj, sizeof(elem_type) * (num));\
+elem_type* temp_obj = (elem_type*) CL_ITERATOR_REALLOC(obj, sizeof(elem_type) * (num));\
 if (temp_obj) {                                                                     \
     obj = temp_obj;                                                                 \
     result = true;                                                                  \
 } else {                                                                            \
     result = false;                                                                 \
 }                                                                                   \
-}                                                                                   
+}                                                                                    
 
 // CONSIDER: removing static and giving external linkage, but then it must be implemented elsewhere. Usually, I would put this in a util file
-void iterative_array_destroy(void ** obj, size_t num);
+void iterative_array_del(void ** obj, size_t num);
 
 // if it fails, no object is created and new_obj##_size is set to 0. Do not use the new_obj##_size as failure. failure is indicated by new_obj == NULL
 // only does a shallow copy
-#define array_comprehension(new_obj, insttype, objtype, ...)                                                    \
+/*
+// expression must take an inst_type * input and result in out_type *
+#define array_comprehension(out_type, new_obj, expression, inst_type, inst, objtype, ...)                                                    \
 size_t new_obj##_size = INIT_COMPREHENSION_SIZE;                                                                \
-insttype ** new_obj = (insttype **) ITERATOR_MALLOC(sizeof(insttype*) * new_obj##_size);                        \
+out_type * new_obj = (out_type *) CL_ITERATOR_MALLOC(sizeof(out_type) * new_obj##_size);                           \
 {                                                                                                               \
-size_t num_elements = 0;                                                                                        \
-objtype##Iterator * objtype##_##inst##_iter = objtype##Iterator_iter(__VA_ARGS__);                              \
-insttype * inst = (insttype *) objtype##Iterator_next(objtype##_##inst##_iter);                                 \
-bool go = true;                                                                                                 \
-while (go && !(objtype##Iterator_stop(objtype##_##inst##_iter)==ITERATOR_STOP)) {                               \
-    if (new_obj##_size == num_elements) {                                                                       \
-        RESIZE_REALLOC(go, new_obj, insttype, new_obj##_size * COMPREHENSION_SCALE)                             \
-        if (!go) {                                                                                              \
-            objtype##Iterator_del(objtype##_##inst##_iter);                                                     \
-            iterative_array_destroy(new_obj, num_elements);                                                     \
-            new_obj = NULL;                                                                                     \
-            continue;                                                                                           \
-        }                                                                                                       \
-        new_obj##_size *= 2;                                                                                    \
-    }                                                                                                           \
-    insttype * inst_copy = (insttype *) ITERATOR_MALLOC(objtype##Iterator_elem_size(objtype##_##inst##_iter));  \
-    if (!inst_copy) {                                                                                           \
-        go = false;                                                                                             \
-        objtype##Iterator_del(objtype##_##inst##_iter);                                                         \
-        iterative_array_destroy(new_obj, num_elements);                                                         \
-        new_obj = NULL;                                                                                         \
-        continue;                                                                                               \
-    }                                                                                                           \
-    memcpy(inst_copy, inst, objtype##Iterator_elem_size(objtype##_##inst##_iter))                               \
-    new_obj[num_elements++] = inst_copy;                                                                        \
-}                                                                                                               \
-if (new_obj) {                                                                                                  \
-    if (num_elements < new_obj##_size) {                                                                        \
-        RESIZE_REALLOC(go, new_obj, insttype, num_elements);                                                    \
-    }                                                                                                           \
-    new_obj##_size = num_elements;                                                                              \
-} else {                                                                                                        \
-    new_obj##_size = 0;                                                                                         \
-}                                                                                                               \
+objtype##Iterator * objtype##new_obj##iter = objtype##Iterator_iter(__VA_ARGS__);
+bool comprehension_go = true;
+size_t comprehension_i = 0;
+inst_type * inst = objtype##Iterator_next(objtype##new_obj##iter);
+while (comprehension_go && !(objtype##Iterator_stop(objtype##new_obj##iter)==ITERATOR_STOP)) {
+    if (comprehension_i >= new_obj##_size) {
+        RESIZE_REALLOC(comprehension_go, out_type, new_obj, new_obj##_size * COMPREHENSION_SCALE);
+        if (!comprehension_go) {
+            objtype##Iterator_del(objtype##new_obj##iter);
+            ITERATOR_FREE(new_obj);
+            continue;
+        }
+        new_obj##_size *= COMPREHENSION_SCALE;
+    }
+    new_obj[comprehension_i] = expression;
+    comprehension_i++;
+    inst = objtype##Iterator_next(objtype##new_obj##iter);
 }
+if (new_obj##_size > comprehension_i) {
+    RESIZE_REALLOC(comprehension_go, out_type, new_obj, comprehension_i);
+    new_obj##_size = comprehension_i;
+}
+*/
 
 #endif // ITERATORS_H
