@@ -52,7 +52,7 @@
     #define hash_t unsigned char
 #endif
 
-typedef struct DoubleLinkedHashNode DoubleLinkedHashNode;
+//typedef struct DoubleLinkedHashNode DoubleLinkedHashNode;
 typedef struct LinkedHashTable LinkedHashTable;
 typedef struct DictItem DictItem;
 typedef struct LinkedHashTableKeyIterator LinkedHashTableKeyIterator;

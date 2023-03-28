@@ -90,21 +90,34 @@ void vNodeAttributes_init(NodeAttributes * NA, unsigned int flags, int narg_pair
     //NA->attr_map[ct] = ct++; // why the fuck is this wrong?, it is as if the value is never set
     //NA->attr_map[ct] = 0;
     //ct++;
+    //printf("setting byte and attr maps\n");
+    unsigned int attr_flag = 1;
     for (int i = 0; i < NODE_N_ATTR; i++) {
-        if ((1 << i) & flags) {
+        //printf("checking attr %d...", i);
+        if (attr_flag & flags) {
+            //printf("present\n");
+            //printf("setting byte_map value %d\n", ct);
             NA->byte_map[ct] = bytes;
+            //printf("setting attr_map value %d\n", i);
             NA->attr_map[i] = ct++;
             bytes += attr_bytes[i];
         } else {
+            //printf("not present\n");
+            //printf("setting byte_map value %d\n", ct);
+            NA->byte_map[ct] = ct ? NA->byte_map[ct-1] : 0;
+            //printf("setting attr_map value %d\n", i);
             NA->attr_map[i] = NODE_NULL; 
-            NA->byte_map[ct] = NA->byte_map[ct-1];
         }
-    } 
+        attr_flag <<= 1;
+    }
+
     NA->n_attrs = ct;
     NA->size = bytes;
     if (narg_pairs > 0) {
+        //printf("allocating new default node\n");
         NA->defaults = vNode_new(NA, narg_pairs, args);
     } else {
+        //printf("setting defaults to NULL\n");
         NA->defaults = NULL;
     }
 }

@@ -1,6 +1,8 @@
 # ContLibs
 Libraries of some simple containers and tools related to their use
 
+[//]: # (This is a comment, note the parentheses are required)
+
 <details><summary> cl_array_binary_tree.h </summary><blockquote>
 
 #### Description
