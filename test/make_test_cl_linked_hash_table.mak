@@ -49,4 +49,4 @@ CFLAGS += -o test_cl_linked_hash_table$(EXT)
 all: build
 
 build:
-	$(CC) $(CFLAGS) test_cl_linked_hash_table.c ../src/cl_linked_hash_table.c ../src/cl_utils.c ../src/cl_node.c $(LFLAGS)
+	$(CC) $(CFLAGS) test_cl_linked_hash_table.c ../src/cl_linked_hash_table.c ../src/cl_utils.c ../src/cl_node.c ../src/cl_hash_utils.c $(LFLAGS)
