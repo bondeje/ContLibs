@@ -1,5 +1,5 @@
 #include <stddef.h>
-#include <string.h>
+#include <string.h>2
 #include "cl_hash_utils.h"
 
 hash_t cstr_hash(const void * key, size_t bin_size) {

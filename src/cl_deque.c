@@ -1,21 +1,7 @@
 #include <stddef.h>
 #include <stdbool.h>
+#include "cl_slice.h"
 #include "cl_deque.h"
-
-struct Deque {
-	void ** data;		// pointer to pointers
-	size_t capacity;	// allocation size
-	size_t size;		// number of elements stored in the Deque
-	size_t head;		// index location of start of array (index 0)
-	bool reversed;
-};
-
-struct DequeIterator {
-	Deque * deq;
-	SliceIterator sl_iter;
-	void * next;
-	unsigned char stop;
-};
 
 static size_t Deque_tail(Deque * deq) {
 	if (deq->reversed) {
@@ -27,15 +13,17 @@ static size_t Deque_tail(Deque * deq) {
 
 static void Deque_align(Deque * deq) {
 	if (deq->reversed) {
-		void * buf;
+		void * addr = NULL;
+		void ** buf = &addr;
 		cl_reverse(deq->data, deq->data + deq->head, sizeof(void*), buf);
 		if (Deque_tail(deq) > deq->head) {
-			cl_reverse(deq->data + deq->head + 1, deq->capacity - 1, sizeof(void*), buf);
+			cl_reverse(deq->data + deq->head + 1, deq->data + deq->capacity - 1, sizeof(void*), buf);
 		}
 		deq->reversed = !deq->reversed; // it is now put in the correct order
 	} else {
 		if (deq->head && deq->size) {
-			void * buf;
+			void * addr = NULL;
+			void ** buf = &addr;
 			// move contents only if num > 0. If num == 0, only have to reset head
 			if (Deque_tail(deq) < deq->head) {
 				cl_reverse(deq->data, deq->data + deq->head-1, sizeof(void *), buf);
@@ -57,15 +45,16 @@ Deque * Deque_new(size_t capacity) {
 	if (!(deq = (Deque *) CL_MALLOC(sizeof(Deque)))) {
 		DEBUG_PRINT(("failed to allocate a new deque in Deque_new\n"));
 		return NULL;
-	}	
+	}
+
+	void ** data = (void **) CL_MALLOC(capacity * sizeof(void*));
 	
-	if (!(deq->data = (void **) CL_MALLOC(capacity * sizeof(void*)))) {
+	if (!data) {
 		DEBUG_PRINT(("failed to allocate pointer array of capacity %zu in Deque_new\n", capacity));
 		CL_FREE(deq);
 		return NULL;
 	}
-	deq->capacity = capacity;
-	Deque_init(deq);
+	Deque_init(deq, data, capacity);
 	return deq;
 }
 
@@ -124,7 +113,9 @@ Deque * Deque_new_from_array(void * arr, size_t num, size_t size) {
 	return deq;
 }
 
-void Deque_init(Deque * deq) {
+void Deque_init(Deque * deq, void ** data, size_t capacity) {
+	deq->capacity = capacity;
+	deq->data = data;
 	deq->head = 0;
 	// deq->tail = 0; // DELETE if refactor OK
 	deq->size = 0;
@@ -161,18 +152,7 @@ void Deque_del(Deque * deq) {
 }
 
 void Deque_clear(Deque * deq) {
-	size_t index = deq->reversed ? Deque_tail(deq) : deq->head;
-	size_t i = 0;
-	while (i < deq->size) {
-		deq->data[index] = NULL;
-		index = (index + 1) % deq->capacity;
-	}
-
-	CL_FREE(deq->data);
-	deq->capacity = CL_DEQUE_DEFAULT_CAPACITY;
-	deq->data = (void **) CL_MALLOC(deq->capacity);
-
-	Deque_init(deq);
+	Deque_init(deq, deq->data, deq->capacity);
 }
 
 void Deque_reverse(Deque * deq) {
@@ -364,14 +344,6 @@ enum iterator_status DequeIterator_stop(DequeIterator * deq_iter) {
     return deq_iter->stop;
 }
 
-// TODO: with a DequeIterator_copy function, this could be replaced
-DequeIterator * DequeIteratorIterator_new(DequeIterator * deq_iter) {
-	return deq_iter;
-}
-
-void DequeIteratorIterator_del(DequeIterator * deq_iter) {
-	DequeIterator_del(deq_iter);
-}
 
 DequeIterator * DequeIteratorIterator_iter(DequeIterator * deq_iter) {
     return deq_iter;
@@ -385,11 +357,27 @@ enum iterator_status DequeIteratorIterator_stop(DequeIterator * deq_iter) {
     return DequeIterator_stop(deq_iter);
 }
 
-/********************************** PRIVATE **********************************/
+// index must be smaller than deq->size; there is no protection if it is larger
+static size_t Deque_index_map_fwd(Deque * deq, size_t index) {
+	ASSERT(index < deq->size, "index out of bounds error in Deque_index_map_fwd. Attempted to get index %zu in container of size %zu", index, deq->size);
+	if (deq->reversed) {
+		if (index > deq->head) {
+			return deq->capacity - (index - deq->head);
+		}
+		return deq->head - index;
+	}
+	// else not reversed
+	if (deq->capacity - deq->head > index) { // this format ensures there is no overflow on the index
+		return deq->head + index;
+	} 
+	// need to circularly index. count backwards from deq->tail to ensure the index fits in size_t, i.e. no negative indexes
+	// index >= deq->capacity - deq->head = Deque_size(deq) - (deq->tail % deq->capacity). so Deque_size(deq) - index <= (deq->tail % deq->capacity)...ensures positivity of ptr_index.
+	return Deque_tail(deq) + 1 - (deq->size - index); 
+}
 
 void * Deque_get(Deque * deq, size_t index) {
 	if (index >= deq->size) { // index out of bounds // should also check for index being outside of bounds of 
-		DEBUG_PRINT(("Index out of bounds error...\n"));
+		//DEBUG_PRINT(("Index out of bounds error...\n"));
 		return NULL;
 	}
 	return deq->data[Deque_index_map_fwd(deq, index)];
@@ -543,24 +531,6 @@ void * Deque_remove(Deque * deq, size_t index) {
 	return val;
 }
 
-// index must be smaller than deq->size; there is no protection if it is larger
-static size_t Deque_index_map_fwd(Deque * deq, size_t index) {
-	ASSERT(index < deq->size, "index out of bounds error in Deque_index_map_fwd. Attempted to get index %zu in container of size %zu", index, deq->size);
-	if (deq->reversed) {
-		if (index > deq->head) {
-			return deq->capacity - (index - deq->head);
-		}
-		return deq->head - index;
-	}
-	// else not reversed
-	if (deq->capacity - deq->head > index) { // this format ensures there is no overflow on the index
-		return deq->head + index;
-	} 
-	// need to circularly index. count backwards from deq->tail to ensure the index fits in size_t, i.e. no negative indexes
-	// index >= deq->capacity - deq->head = Deque_size(deq) - (deq->tail % deq->capacity). so Deque_size(deq) - index <= (deq->tail % deq->capacity)...ensures positivity of ptr_index.
-	return Deque_tail(deq) + 1 - (deq->size - index); 
-}
-
 DequeIterator * Deque_slice(Deque * deq, size_t start, size_t stop, long long step) {
 	
 	Slice sl;
@@ -588,7 +558,7 @@ enum deque_status Deque_push_front(Deque * deq, void * val) {
 }
 
 enum deque_status Deque_push_back(Deque * deq, void * val) {
-    return Deque_insert(deq, deq->size-1, val);
+    return Deque_insert(deq, deq->size, val);
 }
 
 void * Deque_pop_front(Deque * deq) {

@@ -1,3 +1,6 @@
+#include <stddef.h>
+#include "cl_node.h"
+
 #ifndef CL_TREE_UTILS_H
 #define CL_TREE_UTILS_H
 
@@ -27,8 +30,9 @@
 #define TREE_MOD_ORDER_MASK			0x0C
 #define TREE_MOD_FIRST_INORDER		0x04
 #define TREE_MOD_LAST_INORDER		0x08
-#define TREE_MOD_FIRST_LEVELORDER	0x00 // default...if not order is set, then TREE_MOD_ORDER_MASK is 0
+// default...if not order is set, then TREE_MOD_ORDER_MASK is 0
+#define TREE_MOD_FIRST_LEVELORDER	0x00 
 
 size_t array_move_index(size_t index, int dir);
 
-#endif // CL_TREE_UTILS
+#endif // CL_TREE_UTILS_H

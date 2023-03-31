@@ -37,7 +37,21 @@ enum deque_status {
 	CL_DEQUE_SUCCESS = 0
 };
 
+struct Deque {
+	void ** data;		// pointer to pointers
+	size_t capacity;	// allocation size
+	size_t size;		// number of elements stored in the Deque
+	size_t head;		// index location of start of array (index 0)
+	bool reversed;
+};
 typedef struct Deque Deque;
+
+struct DequeIterator {
+	Deque * deq;
+	SliceIterator sl_iter;
+	void * next;
+	unsigned char stop;
+};
 typedef struct DequeIterator DequeIterator;
 typedef struct DequeIterator DequeIteratorIterator;
 
@@ -47,7 +61,7 @@ typedef struct DequeIterator DequeIteratorIterator;
 Deque * Deque_new(size_t capacity);
 Deque * Deque_new_from_parray(void ** arr, size_t num);
 Deque * Deque_new_from_array(void * arr, size_t num, size_t size);
-void Deque_init(Deque * deq);
+void Deque_init(Deque * deq, void ** data, size_t capacity);
 void Deque_del(Deque * deq);
 void Deque_reverse(Deque * deq);
 size_t Deque_size(Deque * deq);
@@ -59,10 +73,15 @@ Deque * Deque_copy(Deque * deq);
 
 // DequeIterator
 DequeIterator * DequeIterator_new(Deque * deq);
-DequeIterator * DequeIterator_iter(Deque * deq);
 void DequeIterator_init(DequeIterator * deq_iter, Deque * deq);
 void DequeIterator_del(DequeIterator * deq_iter);
+DequeIterator * DequeIterator_iter(Deque * deq);
 void * DequeIterator_next(DequeIterator * deq_iter);
+enum iterator_status DequeIterator_stop(DequeIterator * deq_iter);
+
+DequeIterator * DequeIteratorIterator_iter(DequeIterator * deq_iter);
+void * DequeIteratorIterator_next(DequeIterator * deq_iter);
+enum iterator_status DequeIteratorIterator_stop(DequeIterator * deq_iter);
 
 void * Deque_peek_front(Deque * deq);
 void * Deque_peek_back(Deque * deq);

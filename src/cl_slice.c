@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include "cl_slice.h"
 
 Slice * Slice_new(size_t start, size_t stop, long long step) {
@@ -48,7 +49,6 @@ void SliceIterator_init(SliceIterator * sl_iter, Slice * sl) {
 		}
 		sl_iter->next = sl_iter->sl.start;
 		sl_iter->stop = ITERATOR_PAUSE;
-		_SliceIterator_update_stop(sl_iter);
 	}
 }
 
@@ -59,7 +59,7 @@ void SliceIterator_del(SliceIterator * sl_iter) {
 size_t SliceIterator_next(SliceIterator * sl_iter) {
 	if (sl_iter->stop == ITERATOR_PAUSE) {
 		sl_iter->next = sl_iter->sl.start;
-		sl_iter->stop == ITERATOR_GO;
+		sl_iter->stop = ITERATOR_GO;
 	} else {
 		if (sl_iter->sl.step < 0) {
 			if (sl_iter->next < sl_iter->sl.stop && sl_iter->next < -sl_iter->sl.step) {
@@ -89,4 +89,16 @@ enum iterator_status SliceIterator_stop(SliceIterator * sl_iter) {
 		return ITERATOR_STOP;
 	}
 	return sl_iter->stop;
+}
+
+SliceIterator * SliceIteratorIterator_iter(SliceIterator * sl_iter) {
+	return sl_iter;
+}
+
+size_t SliceIteratorIterator_next(SliceIterator * sl_iter) {
+	return SliceIterator_next(sl_iter);
+}
+
+enum iterator_status SliceIteratorIterator_stop(SliceIterator * sl_iter) {
+	return SliceIterator_stop(sl_iter);
 }

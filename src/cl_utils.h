@@ -42,13 +42,13 @@
 #define IS_NEG(X) (!((X) > 0) && ((X) != 0))
 
 // unfortunately, we cannot build the macro that builds the __VA_ARGS__ overloading macros
-// swapping elements at two locations
+// swapping elements at two locations A and B of size C, with optional buffer D
 #define cl_swap3(A, B, C) cl_swap_unbuffered(A, B, C)
 #define cl_swap4(A, B, C, D) cl_swap_buffered(A, B, C, D)
 #define GET_CL_SWAP_MACRO(_1, _2, _3, _4, NAME, ...) NAME
 #define cl_swap(...) GET_CL_SWAP_MACRO(__VA_ARGS__, cl_swap4, cl_swap3, UNUSED)(__VA_ARGS__)
 
-// swapping elements at two locations
+// reversing array sequence from A to B of size C, with optional buffer D
 #define cl_reverse3(A, B, C) cl_reverse_unbuffered(A, B, C)
 #define cl_reverse4(A, B, C, D) cl_reverse_buffered(A, B, C, D)
 #define GET_CL_REVERSE_MACRO(_1, _2, _3, _4, NAME, ...) NAME
@@ -125,19 +125,6 @@ enum cl_status cl_reverse_unbuffered(void *, void *, size_t);
 enum cl_status cl_reverse_buffered(void *, void *, size_t, void *);
 
 /************************* HANDLING SIGNS *************************/
-
-/****************************** IMPLEMENTATION ******************************/
-
-// DISCOURAGED temporary buffer is malloc'd internally and memory monitoring is bypassed
-void cl_swap_unbuffered(void * src, void * dest, size_t size);
-
-// PREFERRED temporary buffer is malloc'd/provided by caller
-void cl_swap_buffered(void * src, void * dest, size_t size, void * buf);
-
-int cl_reverse_unbuffered(void * start, void * end, size_t size);
-
-// buf must at least be as long as 'size' bytes
-int cl_reverse_buffered(void * start, void * end, size_t size, void * buf);
 
 /******************************** COMPARISON *********************************/
 

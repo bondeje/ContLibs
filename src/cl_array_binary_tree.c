@@ -13,17 +13,8 @@
  
 #define DEFAULT_SCALE_FACTOR 2
 
-#define REQUIRED_NODE_FLAGS (Node_flag(VALUE))
-
-// manually construct static allocations of defaults. Reduce heap load
-static Node DEFAULT_NODE[sizeof(Node_type(VALUE))] = {'\0'};
-static NodeAttributes DEFAULT_NODE_ATTRIBUTES = {.byte_map = {0},
-                                                 .attr_map = {0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
-                                                 .size = sizeof(Node_type(VALUE)),
-                                                 .n_attrs = 1,
-                                                 .flags = REQUIRED_NODE_FLAGS,
-                                                 .defaults = &DEFAULT_NODE[0]
-                                                };
+#define REQUIRED_NODE_FLAGS 0
+#define DEFAULT_NODE Node_new(NA, 0)
 
 //#define DEFAULT_NODE_ATTRIBUTES NodeAttributes_new(REQUIRED_NODE_FLAGS, 1, Node_attr(VALUE), NULL)
 
@@ -39,10 +30,10 @@ struct ArrayBinaryTree {
     size_t capacity;
     NodeAttributes * NA;
     size_t size;
-    int (*compare) (Node_type(VALUE), Node_type(VALUE));
+    int (*compare) (Node_type(KEY), Node_type(KEY));
 };
 
-void ArrayBinaryTree_init(ArrayBinaryTree * abt, size_t capacity, int (*compare) (Node_type(VALUE), Node_type(VALUE)), NodeAttributes * NA) {
+void ArrayBinaryTree_init(ArrayBinaryTree * abt, size_t capacity, int (*compare) (Node_type(KEY), Node_type(KEY)), NodeAttributes * NA) {
     for (size_t i = 0; i < capacity; i++) {
         abt->nodes[i] = NULL;
     }
@@ -51,9 +42,8 @@ void ArrayBinaryTree_init(ArrayBinaryTree * abt, size_t capacity, int (*compare)
     abt->size = 0;
     abt->compare = compare;
 }
-
-ArrayBinaryTree * ArrayBinaryTree_new(size_t capacity, int (*compare) (Node_type(VALUE), Node_type(VALUE)), unsigned int node_flags, int narg_pairs, ...) {
-    ArrayBinaryTree * abt = (ArrayBinaryTree *) CL_MALLOC(sizeof(ArrayBinaryTree));
+ArrayBinaryTree * vArrayBinaryTree_new(size_t capacity, int (*compare) (Node_type(KEY), Node_type(KEY)), unsigned int node_flags, int narg_pairs, va_list args) {
+	ArrayBinaryTree * abt = (ArrayBinaryTree *) CL_MALLOC(sizeof(ArrayBinaryTree));
     if (!abt) {
         return NULL;
     }
@@ -65,16 +55,9 @@ ArrayBinaryTree * ArrayBinaryTree_new(size_t capacity, int (*compare) (Node_type
         return NULL;
     }
 
-    NodeAttributes * NA = NULL;
-    if (!node_flags) {
-        NA = &DEFAULT_NODE_ATTRIBUTES;
-    } else {
-        node_flags |= Node_flag(VALUE); // must have at least the value component
-        va_list args;
-        va_start(args, narg_pairs);
-        NA = vNodeAttributes_new(node_flags, narg_pairs, args);
-        va_end(args);
-    }
+	node_flags |= REQUIRED_NODE_FLAGS; // must have at least the value component
+	
+	NodeAttributes * NA = vNodeAttributes_new(node_flags, narg_pairs, args);
 
     if (!NA) {
         CL_FREE(abt->nodes);
@@ -89,6 +72,15 @@ ArrayBinaryTree * ArrayBinaryTree_new(size_t capacity, int (*compare) (Node_type
     return abt;
 }
 
+ArrayBinaryTree * ArrayBinaryTree_new(size_t capacity, int (*compare) (Node_type(KEY), Node_type(KEY)), unsigned int node_flags, int narg_pairs, ...) {
+    va_list args;
+	va_start(args, narg_pairs);
+	ArrayBinaryTree * abt = vArrayBinaryTree_new(capacity, compare, node_flags, narg_pairs, args);
+	va_end(args);
+
+	return abt;
+}
+
 void ArrayBinaryTree_del(ArrayBinaryTree * abt) {
     for (size_t i = 0; i < abt->capacity; i++) {
         if (abt->nodes[i]) {
@@ -98,7 +90,7 @@ void ArrayBinaryTree_del(ArrayBinaryTree * abt) {
     }
     CL_FREE(abt->nodes);
     abt->nodes = NULL;
-    if (abt->NA != &DEFAULT_NODE_ATTRIBUTES) { // DEFAULT_NODE_ATTRIBUTES is statically allocated
+    if (abt->NA) { // DEFAULT_NODE_ATTRIBUTES is statically allocated
         CL_FREE(abt->NA);
     }
     abt->NA = NULL;
@@ -118,14 +110,18 @@ static bool ArrayBinaryTree_is_leaf(ArrayBinaryTree * abt, size_t index) {
 	return false;
 }
 
-size_t ArrayBinaryTree_size(ArrayBinaryTree * abt, size_t index) {
+size_t ArrayBinaryTree_size(ArrayBinaryTree * abt) {
+	return abt->size;
+}
+
+size_t ArrayBinaryTree_subtree_size(ArrayBinaryTree * abt, size_t index) {
 	if (!index) {
 		return abt->size;
 	} else {
 		if (index >= abt->size || abt->nodes[index] == NULL) {
 			return 0;
 		} else {
-			return 1 + ArrayBinaryTree_size(abt, move(index, DIR_LEFT)) + ArrayBinaryTree_size(abt, move(index, DIR_RIGHT));
+			return 1 + ArrayBinaryTree_subtree_size(abt, move(index, DIR_LEFT)) + ArrayBinaryTree_subtree_size(abt, move(index, DIR_RIGHT));
 		}
 	}
 }
@@ -312,10 +308,10 @@ void ArrayBinaryTree_move_subtree(ArrayBinaryTree * abt, size_t root, size_t tar
 	// else do nothing and return
 }
 
-ArrayBinaryTree * ArrayBinaryTree_rotate(ArrayBinaryTree * abt, size_t index, int dir) {
+int ArrayBinaryTree_rotate(ArrayBinaryTree * abt, size_t index, int dir) {
 	size_t N = abt->size;
-	if (index >= N || abt->nodes[index] != NULL) {
-		return abt; // do nothing because it cannot be rotated. not sure if this is the right output
+	if (index >= N || abt->nodes[index] != NULL || !(dir == DIR_LEFT || dir == DIR_RIGHT)) {
+		return CL_SUCCESS; // do nothing because it cannot be rotated. really should be InputError
 	}
 	
 	size_t left_child = move(index, DIR_LEFT);
@@ -323,7 +319,7 @@ ArrayBinaryTree * ArrayBinaryTree_rotate(ArrayBinaryTree * abt, size_t index, in
 	
 	if (dir == DIR_LEFT) {
 		if (right_child >= N || abt->nodes[right_child] == NULL) { // cannot rotate left
-			return abt;
+			return CL_SUCCESS;
 		}
 		
 		// move index's left child subtree down to its left // down and left move
@@ -342,7 +338,7 @@ ArrayBinaryTree * ArrayBinaryTree_rotate(ArrayBinaryTree * abt, size_t index, in
 		ArrayBinaryTree_move_subtree(abt, move(right_child, DIR_RIGHT), right_child);
 	} else if (dir == DIR_RIGHT) {
 		if (left_child >= N || abt->nodes[left_child] == NULL) { // cannot rotate right
-			return abt;
+			return CL_SUCCESS;
 		}
 		// if rotating right, the swaps require AT LEAST a tree of size right_child + 1
 		if (right_child >= N) {
@@ -362,18 +358,15 @@ ArrayBinaryTree * ArrayBinaryTree_rotate(ArrayBinaryTree * abt, size_t index, in
         
         // move index's left child's left subtree up to index's left subtree // up and right
         ArrayBinaryTree_move_subtree(abt, move(left_child, DIR_LEFT), left_child);
-	} else {
-		assert(dir == DIR_LEFT || dir == DIR_RIGHT);
-		// handle error
 	}
 	
-	return abt;
+	return CL_SUCCESS;
 }
 
-ArrayBinaryTree * ArrayBinaryTree_split_rotate(ArrayBinaryTree * abt, size_t index, int dir) {
+int ArrayBinaryTree_split_rotate(ArrayBinaryTree * abt, size_t index, int dir) {
     size_t N = abt->size;
     if (index >= N || abt->nodes[index] == NULL) {
-        return abt; // do nothing because it cannot be rotated or rotating is meaningless
+        return CL_SUCCESS; // do nothing because it cannot be rotated or rotating is meaningless
 	}
     size_t left_child = move(index, DIR_LEFT);
     size_t right_child = move(index, DIR_RIGHT);
@@ -381,7 +374,7 @@ ArrayBinaryTree * ArrayBinaryTree_split_rotate(ArrayBinaryTree * abt, size_t ind
     if (dir == DIR_LEFT) {
         size_t grandchild = move(right_child, DIR_LEFT);
         if (right_child >= N || grandchild >= N || abt->nodes[right_child] == NULL || abt->nodes[grandchild] == NULL) { // cannot rotate left
-            return abt;
+            return CL_SUCCESS;
 		}
         // move left_child to its left subtree // might incur O(N) memory increase and build time
         ArrayBinaryTree_move_subtree(abt, left_child, move(left_child, DIR_LEFT));
@@ -400,7 +393,7 @@ ArrayBinaryTree * ArrayBinaryTree_split_rotate(ArrayBinaryTree * abt, size_t ind
 	} else if (dir == DIR_RIGHT) {
         size_t grandchild = move(left_child, DIR_RIGHT);
         if (left_child >= N || grandchild >= N || abt->nodes[left_child] == NULL || abt->nodes[grandchild] == NULL) { // cannot rotate right
-            return abt;
+            return CL_SUCCESS;
 		}
         if (grandchild >= N) {
             ArrayBinaryTree_resize(abt, grandchild+1);
@@ -418,13 +411,12 @@ ArrayBinaryTree * ArrayBinaryTree_split_rotate(ArrayBinaryTree * abt, size_t ind
         ArrayBinaryTree_move_subtree(abt, move(grandchild, DIR_LEFT), move(left_child, DIR_RIGHT));
         
     } else {
-		assert(dir == DIR_LEFT || dir == DIR_RIGHT);
-        // handle error
+		return CL_FAILURE;
 	}
     
-    return abt;
+    return CL_SUCCESS;
 }
-
+// check if node has a parent attribute and use a more efficient algorithm
 size_t ArrayBinaryTree_leftmost(ArrayBinaryTree * abt, size_t index, Deque * path) {
 	int destroy = (!path) ? 1 : 0;
 	if (destroy) {
@@ -448,7 +440,7 @@ size_t ArrayBinaryTree_leftmost(ArrayBinaryTree * abt, size_t index, Deque * pat
 	
 	return result;
 }
-
+// check if node has a parent attribute and use a more efficient algorithm
 size_t ArrayBinaryTree_rightmost(ArrayBinaryTree * abt, size_t index, Deque * path) {
 	if (!path) {
 		path = Deque_new(2*ArrayBinaryTree_approx_height(abt));
@@ -498,7 +490,7 @@ static max_min_st * ArrayBinaryTree_extremal_paths_to_leaves(ArrayBinaryTree * a
 */
 
 static unsigned char ArrayBinaryTree_path_to_helper(ArrayBinaryTree * abt, size_t index, void * tvd) {
-	if (!abt->compare(Node_get(abt->NA, abt->nodes[index], VALUE), ((treevalue_deque*)tvd)->value)) {
+	if (!abt->compare(Node_get(abt->NA, abt->nodes[index], KEY), ((treevalue_deque*)tvd)->value)) {
         size_t * el = CL_MALLOC(sizeof(size_t));
         *el = index;
         Deque_push_back(((treevalue_deque*)tvd)->deq, el);

@@ -1,3 +1,4 @@
+#include <stddef.h>
 #include <stdlib.h> // SIZE_MAX
 #include <limits.h> // LLONG_MAX
 #include "cl_core.h"
@@ -8,8 +9,22 @@
 #ifndef CL_SLICE_H
 #define CL_SLICE_H
 
+struct Slice {
+	size_t start;
+	size_t stop;
+	long long step;
+};
+
 typedef struct Slice Slice;
+
+struct SliceIterator {
+	Slice sl;
+	size_t next;
+	enum iterator_status stop;
+};
+
 typedef struct SliceIterator SliceIterator;
+typedef struct SliceIterator SliceIteratorIterator;
 
 enum slice_error_code {
 	SLICE_OUT_OF_BOUNDS = -1,
@@ -23,44 +38,15 @@ void Slice_del(Slice * sl);
 
 size_t shift_index_to_positive(long long, size_t);
 
-SliceIterator * Slice_iterator_new(Slice *);
+SliceIterator * SliceIterator_new(Slice *);
 void SliceIterator_init(SliceIterator *, Slice *);
-void SliceIterator_destroy(SliceIterator *);
-void _SliceIterator_update_stop(SliceIterator *);
+void SliceIterator_del(SliceIterator *);
+SliceIterator * SliceIterator_iter(Slice *);
 size_t SliceIterator_next(SliceIterator *);
+void _SliceIterator_stop(SliceIterator *);
 
-/****************************** IMPLEMENTATION *******************************/
-
-/********************************** PUBLIC ***********************************/
-
-struct Slice {
-	size_t start;
-	size_t stop;
-	long long step;
-};
-
-struct SliceIterator {
-	Slice sl;
-	size_t next;
-	enum iterator_status stop;
-};
-
-Slice * Slice_new(size_t start, size_t stop, long long step);
-
-void Slice_init(Slice * sl, size_t start, size_t stop, long long step);
-
-// used only with slices created with slice_create
-void Slice_del(Slice * sl);
-
-SliceIterator * SliceIterator_new(Slice * sl);
-
-// if sl_iter has already been initialized, sl == NULL will act as a 'reset'
-void SliceIterator_init(SliceIterator * sl_iter, Slice * sl);
-
-void SliceIterator_del(SliceIterator * sl_iter);
-
-size_t SliceIterator_next(SliceIterator * sl_iter);
-
-enum iterator_status SliceIterator_stop(SliceIterator * sl_iter);
+SliceIterator * SliceIteratorIterator_iter(SliceIterator *);
+size_t SliceIteratorIterator_next(SliceIterator *);
+void _SliceIteratorIterator_stop(SliceIterator *);
 
 #endif // CL_SLICE_H
