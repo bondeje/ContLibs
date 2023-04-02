@@ -42,17 +42,29 @@ Declarations and macros for iterator facilities for use with any of the containe
 To be iterable, an instance of type `Type` must have the following structure and functions defined.
 
 ```
-// for now, this must be a typedef
+// for now, this must be a typedef. For the facilities here, this must not be an opaque struct.
+// To keep internals opaque, I suggest the union char[] allocation for data hiding
 typedef struct {} [Type]Iterator;
 
-// Iterator allocation. variadics allow for configuration of the Iterator
-[Type]Iterator * [Type]Iterator_iter(Type * object_instance, ...); 
+// Iterator allocation. variadics allow for configuration of the Iterator. 
+// Normally, the first (and frequently only) parameter in the variadic is a 
+// [Type] * pointer to an instance over which you want to iterate
+void [Type]Iterator_init([Type]Iterator * object_iterator, ...); 
 
 // return next element in the iterable object_instance. Must be a pointer of an arbitrary [ElementType].
 [ElementType] * [Type]Iterator_next([Type]Iterator * object_iterator);
 
-// for memory safety, when ITERATOR_STOP condition is met, object_iterator must be de-allocated
-void [Type]Iterator_stop([Type]Iterator * object_iterator) 
+// check for stop condition on iterator
+void [Type]Iterator_stop([Type]Iterator * object_iterator);
+
+// additional standard functions include but are not required for the iterator facilities:
+
+// heap-allocate a new iterator. First element is usually instance of the 
+// object being iterated
+[Type]Iterator * [Type]Iterator_new(...)
+
+// struct destruction
+void [Type]Iterator_del([Type]Iterator * iter);
 ```
 
 In many cases, it is of practical use to have a function return an iterator that additionally may only have a default or incomplete configuration that is configured at a later time. To facilitate this, many of the Iterators that conform to the above definition of iterable are themselves iterable, i.e. there are corresponding functions that look like `[Type]IteratorIterator...` while `[Type]IteratorIterator` is an alias for `[Type]Iterator`. This allows users to have factories that create iterators, possibly modified, and then used in the iterator facilites within this header. This is especially useful for creating reverse iterators or slicing of sequences.
@@ -99,7 +111,7 @@ Basically include a lot of the features of the `itertools` module in Python
 
 #### Notes
 
-When using the iterators with the `for_each` & `for_each_enumerate` macros, memory is automatically allocated on the heap and collected when the loops are terminated <b>without using `break` or `goto`</b>. If the for_each & for_each_enumerate loops are broken early or if any other loop construction is terminated with `break` or `goto`, the iterator object's memory must be manually deallocated. For most of the built in Iterators, this simply means calling the \[type\]Iterator_del(\[type\] * object) method.
+When using the iterators with the `for_each` & `for_each_enumerate` macros, memory is statically allocated. If using heap allocation, stop checking will not free the memory and separate destruction is necessary.
 
 #### Examples
 
