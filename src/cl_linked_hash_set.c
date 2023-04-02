@@ -34,14 +34,6 @@ struct LinkedHashSet {
     hash_t (*hash) (const void *, size_t);
 };
 
-struct LinkedHashSetIterator {
-    NodeAttributes * NA;
-    Node * node;
-    const void * next_key;
-    bool reversed;
-    enum iterator_status stop;
-};
-
 size_t LinkedHashSet_size(LinkedHashSet * hash_set) {
     return hash_set->size;
 }
@@ -293,23 +285,18 @@ int LinkedHashSet_remove(LinkedHashSet * hash_set, void * key) {
 
 // ITERATORS:
 
-LinkedHashSetIterator * LinkedHashSetIterator_new(LinkedHashSet * hash_set, bool reversed) {
+LinkedHashSetIterator * LinkedHashSetIterator_new(LinkedHashSet * hash_set) {
     LinkedHashSetIterator * key_iter = (LinkedHashSetIterator *) CL_MALLOC(sizeof(LinkedHashSetIterator));
     if (!key_iter) {
         return NULL;
     }
-    LinkedHashSetIterator_init(key_iter, hash_set, reversed);
+    LinkedHashSetIterator_init(key_iter, hash_set);
     return key_iter;
 }
-void LinkedHashSetIterator_init(LinkedHashSetIterator * key_iter, LinkedHashSet * hash_set, bool reversed) {
+void LinkedHashSetIterator_init(LinkedHashSetIterator * key_iter, LinkedHashSet * hash_set) {
     key_iter->next_key = NULL;
-    if (reversed) {
-        key_iter->node = hash_set->tail_inorder;
-    } else {
-        key_iter->node = hash_set->head_inorder;
-    }
+    key_iter->node = hash_set->head_inorder;
     key_iter->NA = hash_set->NA;
-    key_iter->reversed = reversed;
     key_iter->stop = ITERATOR_GO;
 }
 void LinkedHashSetIterator_del(LinkedHashSetIterator * key_iter) {
@@ -319,9 +306,6 @@ void LinkedHashSetIterator_del(LinkedHashSetIterator * key_iter) {
     CL_FREE(key_iter);
 }
 
-LinkedHashSetIterator * LinkedHashSetIterator_iter(LinkedHashSet * hash_set, bool reversed) {
-    return LinkedHashSetIterator_new(hash_set, reversed);
-}
 const void * LinkedHashSetIterator_next(LinkedHashSetIterator * key_iter) {
     if (!key_iter) {
         return NULL;
@@ -331,11 +315,7 @@ const void * LinkedHashSetIterator_next(LinkedHashSetIterator * key_iter) {
         return NULL;
     }
     key_iter->next_key = Node_get(key_iter->NA, key_iter->node, KEY);
-    if (key_iter->reversed) {
-        key_iter->node = Node_get(key_iter->NA, key_iter->node, PREV_INORDER);
-    } else {
-        key_iter->node = Node_get(key_iter->NA, key_iter->node, NEXT_INORDER);
-    }
+    key_iter->node = Node_get(key_iter->NA, key_iter->node, NEXT_INORDER);
     return key_iter->next_key;
 }
 enum iterator_status LinkedHashSetIterator_stop(LinkedHashSetIterator * key_iter) {

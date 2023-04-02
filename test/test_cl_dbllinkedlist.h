@@ -1,4 +1,4 @@
-#include "../src/cl_dbllinkedlist.h"
+#include "cl_dbllinkedlist.h"
 
 int test_DblLinkedList_new() {
     printf("testing DblLinkedList_new...");

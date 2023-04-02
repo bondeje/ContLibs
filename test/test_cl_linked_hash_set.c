@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
-#include "../src/cl_linked_hash_set.h"
+#include "cl_linked_hash_set.h"
 
 int test_hash_set_address(void) {
     printf("testing hash_set with addresses...");

@@ -31,30 +31,6 @@ struct LinkedHashTable {
     hash_t (*hash) (const void *, size_t);
 };
 
-struct LinkedHashTableKeyIterator {
-    NodeAttributes * NA;
-    Node * node;
-    const void * next_key;
-    bool reversed;
-    enum iterator_status stop;
-};
-
-struct LinkedHashTableValueIterator {
-    NodeAttributes * NA;
-    Node * node;
-    void * next_value;
-    bool reversed;
-    enum iterator_status stop;
-};
-
-struct LinkedHashTableItemIterator {
-    NodeAttributes * NA;
-    Node * node;
-    DictItem * next_item;
-    bool reversed;
-    enum iterator_status stop;
-};
-
 /* INTERNAL SETTINGS */
 
 DictItem * DictItem_new(void * key, void * value) {
@@ -351,33 +327,33 @@ int LinkedHashTable_remove(LinkedHashTable * hash_table, void * key) {
 
 // ITERATORS:
 
-LinkedHashTableKeyIterator * LinkedHashTable_keys(LinkedHashTable * hash_table, bool reversed) {
-    return LinkedHashTableKeyIterator_new(hash_table, reversed);
+LinkedHashTableKeyIterator * LinkedHashTable_keys(LinkedHashTable * hash_table) {
+    return LinkedHashTableKeyIterator_new(hash_table);
 }
-LinkedHashTableValueIterator * LinkedHashTable_values(LinkedHashTable * hash_table, bool reversed) {
-    return LinkedHashTableValueIterator_new(hash_table, reversed);
+LinkedHashTableValueIterator * LinkedHashTable_values(LinkedHashTable * hash_table) {
+    return LinkedHashTableValueIterator_new(hash_table);
 }
-LinkedHashTableItemIterator * LinkedHashTable_items(LinkedHashTable * hash_table, bool reversed) {
-    return LinkedHashTableItemIterator_new(hash_table, reversed);
+LinkedHashTableItemIterator * LinkedHashTable_items(LinkedHashTable * hash_table) {
+    return LinkedHashTableItemIterator_new(hash_table);
 }
 
-LinkedHashTableKeyIterator * LinkedHashTableKeyIterator_new(LinkedHashTable * hash_table, bool reversed) {
+LinkedHashTableKeyIterator * LinkedHashTableKeyIterator_new(LinkedHashTable * hash_table) {
     LinkedHashTableKeyIterator * key_iter = (LinkedHashTableKeyIterator *) CL_MALLOC(sizeof(LinkedHashTableKeyIterator));
     if (!key_iter) {
         return NULL;
     }
-    LinkedHashTableKeyIterator_init(key_iter, hash_table, reversed);
+    LinkedHashTableKeyIterator_init(key_iter, hash_table);
     return key_iter;
 }
-LinkedHashTableValueIterator * LinkedHashTableValueIterator_new(LinkedHashTable * hash_table, bool reversed) {
+LinkedHashTableValueIterator * LinkedHashTableValueIterator_new(LinkedHashTable * hash_table) {
     LinkedHashTableValueIterator * value_iter = (LinkedHashTableValueIterator *) CL_MALLOC(sizeof(LinkedHashTableValueIterator));
     if (!value_iter) {
         return NULL;
     }
-    LinkedHashTableValueIterator_init(value_iter, hash_table, reversed);
+    LinkedHashTableValueIterator_init(value_iter, hash_table);
     return value_iter;
 }
-LinkedHashTableItemIterator * LinkedHashTableItemIterator_new(LinkedHashTable * hash_table, bool reversed) {
+LinkedHashTableItemIterator * LinkedHashTableItemIterator_new(LinkedHashTable * hash_table) {
     LinkedHashTableItemIterator * item_iter = (LinkedHashTableItemIterator *) CL_MALLOC(sizeof(LinkedHashTableItemIterator));
     if (!item_iter) {
         return NULL;
@@ -388,41 +364,26 @@ LinkedHashTableItemIterator * LinkedHashTableItemIterator_new(LinkedHashTable * 
         CL_FREE(item_iter);
         return NULL;
     }
-    LinkedHashTableItemIterator_init(item_iter, hash_table, reversed);
+    LinkedHashTableItemIterator_init(item_iter, hash_table);
     return item_iter;
 }
-void LinkedHashTableKeyIterator_init(LinkedHashTableKeyIterator * key_iter, LinkedHashTable * hash_table, bool reversed) {
+void LinkedHashTableKeyIterator_init(LinkedHashTableKeyIterator * key_iter, LinkedHashTable * hash_table) {
     key_iter->next_key = NULL;
-    if (reversed) {
-        key_iter->node = hash_table->tail_inorder;
-    } else {
-        key_iter->node = hash_table->head_inorder;
-    }
+    key_iter->node = hash_table->head_inorder;
     key_iter->NA = hash_table->NA;
-    key_iter->reversed = reversed;
     key_iter->stop = ITERATOR_GO;
 }
-void LinkedHashTableValueIterator_init(LinkedHashTableValueIterator * value_iter, LinkedHashTable * hash_table, bool reversed) {
+void LinkedHashTableValueIterator_init(LinkedHashTableValueIterator * value_iter, LinkedHashTable * hash_table) {
     value_iter->next_value = NULL;
-    if (reversed) {
-        value_iter->node = hash_table->tail_inorder;
-    } else {
-        value_iter->node = hash_table->head_inorder;
-    }
+    value_iter->node = hash_table->head_inorder;
     value_iter->NA = hash_table->NA;
-    value_iter->reversed = reversed;
     value_iter->stop = ITERATOR_GO;
 }
-void LinkedHashTableItemIterator_init(LinkedHashTableItemIterator * item_iter, LinkedHashTable * hash_table, bool reversed) {
+void LinkedHashTableItemIterator_init(LinkedHashTableItemIterator * item_iter, LinkedHashTable * hash_table) {
     item_iter->next_item->key = NULL;
     item_iter->next_item->value = NULL;
-    if (reversed) {
-        item_iter->node = hash_table->tail_inorder;
-    } else {
-        item_iter->node = hash_table->head_inorder;
-    }
+    item_iter->node = hash_table->head_inorder;
     item_iter->NA = hash_table->NA;
-    item_iter->reversed = reversed;
     item_iter->stop = ITERATOR_GO;
 }
 void LinkedHashTableKeyIterator_del(LinkedHashTableKeyIterator * key_iter) {
@@ -445,15 +406,6 @@ void LinkedHashTableItemIterator_del(LinkedHashTableItemIterator * item_iter) {
     CL_FREE(item_iter);
 }
 
-LinkedHashTableKeyIterator * LinkedHashTableKeyIterator_iter(LinkedHashTable * hash_table, bool reversed) {
-    return LinkedHashTableKeyIterator_new(hash_table, reversed);
-}
-LinkedHashTableValueIterator * LinkedHashTableValueIterator_iter(LinkedHashTable * hash_table, bool reversed) {
-    return LinkedHashTableValueIterator_new(hash_table, reversed);
-}
-LinkedHashTableItemIterator * LinkedHashTableItemIterator_iter(LinkedHashTable * hash_table, bool reversed) {
-    return LinkedHashTableItemIterator_new(hash_table, reversed);
-}
 const void * LinkedHashTableKeyIterator_next(LinkedHashTableKeyIterator * key_iter) {
     if (!key_iter) {
         return NULL;
@@ -463,11 +415,7 @@ const void * LinkedHashTableKeyIterator_next(LinkedHashTableKeyIterator * key_it
         return NULL;
     }
     key_iter->next_key = Node_get(key_iter->NA, key_iter->node, KEY);
-    if (key_iter->reversed) {
-        key_iter->node = Node_get(key_iter->NA, key_iter->node, PREV_INORDER);
-    } else {
-        key_iter->node = Node_get(key_iter->NA, key_iter->node, NEXT_INORDER);
-    }
+    key_iter->node = Node_get(key_iter->NA, key_iter->node, NEXT_INORDER);
     return key_iter->next_key;
 }
 void * LinkedHashTableValueIterator_next(LinkedHashTableValueIterator * value_iter) {
@@ -479,11 +427,7 @@ void * LinkedHashTableValueIterator_next(LinkedHashTableValueIterator * value_it
         return NULL;
     }
     value_iter->next_value = Node_get(value_iter->NA, value_iter->node, VALUE);
-    if (value_iter->reversed) {
-        value_iter->node = Node_get(value_iter->NA, value_iter->node, PREV_INORDER);
-    } else {
-        value_iter->node = Node_get(value_iter->NA, value_iter->node, NEXT_INORDER);
-    }
+    value_iter->node = Node_get(value_iter->NA, value_iter->node, NEXT_INORDER);
     return value_iter->next_value;
 }
 DictItem * LinkedHashTableItemIterator_next(LinkedHashTableItemIterator * item_iter)  {
@@ -496,11 +440,7 @@ DictItem * LinkedHashTableItemIterator_next(LinkedHashTableItemIterator * item_i
     }
     item_iter->next_item->key = Node_get(item_iter->NA, item_iter->node, KEY);
     item_iter->next_item->value = Node_get(item_iter->NA, item_iter->node, VALUE);
-    if (item_iter->reversed) {
-        item_iter->node = Node_get(item_iter->NA, item_iter->node, PREV_INORDER);
-    } else {
-        item_iter->node = Node_get(item_iter->NA, item_iter->node, NEXT_INORDER);
-    }
+    item_iter->node = Node_get(item_iter->NA, item_iter->node, NEXT_INORDER);
     return item_iter->next_item;
 }
 enum iterator_status LinkedHashTableKeyIterator_stop(LinkedHashTableKeyIterator * key_iter) {

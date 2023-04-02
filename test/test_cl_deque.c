@@ -1,7 +1,7 @@
 #include <stddef.h>
 #include <stdio.h>
-#include "../src/cl_core.h"
-#include "../src/cl_deque.h"
+#include "cl_core.h"
+#include "cl_deque.h"
 
 int test_static_push_pop_peek(void) {
 	printf("Testing statically allocated  Deque_push*, Deque_pop* & Deque_peek*...");

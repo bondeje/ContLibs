@@ -4,6 +4,7 @@ CC = gcc
 EXT = 
 LFLAGS = 
 CFLAGS = -std=c99 -O2 -Wall -pedantic
+IFLAGS = -I../include
 
 ifeq ($(OS),Windows_NT)
 	# might have to encapsulate with a check for MINGW. Need this because Windows f-s up printf with size_t and MINGW only handles it with their own implementation of stdio
@@ -49,4 +50,4 @@ CFLAGS += -o test_cl_deque$(EXT)
 all: build
 
 build:
-	$(CC) $(CFLAGS) test_cl_deque.c ../src/cl_deque.c ../src/cl_utils.c ../src/cl_slice.c $(LFLAGS)
+	$(CC) $(CFLAGS) $(IFLAGS) test_cl_deque.c ../src/cl_deque.c ../src/cl_utils.c ../src/cl_slice.c $(LFLAGS)

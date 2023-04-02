@@ -110,6 +110,7 @@ typedef unsigned int uint;
 typedef unsigned long ulong;
 typedef unsigned long long ulonglong;
 typedef long long longlong;
+typedef void* pvoid;
 
 // failure/success defaults. Note CL_FAIL will be unspecified failures. For more detailed failures, use an appropriate ENUM
 enum cl_status {

@@ -27,9 +27,27 @@
 //typedef struct DoubleLinkedHashNode DoubleLinkedHashNode;
 typedef struct LinkedHashTable LinkedHashTable;
 typedef struct DictItem DictItem;
-typedef struct LinkedHashTableKeyIterator LinkedHashTableKeyIterator;
-typedef struct LinkedHashTableValueIterator LinkedHashTableValueIterator;
-typedef struct LinkedHashTableItemIterator LinkedHashTableItemIterator;
+
+typedef struct LinkedHashTableKeyIterator {
+    NodeAttributes * NA;
+    Node * node;
+    const void * next_key;
+    enum iterator_status stop;
+} LinkedHashTableKeyIterator;
+
+typedef struct LinkedHashTableValueIterator {
+    NodeAttributes * NA;
+    Node * node;
+    void * next_value;
+    enum iterator_status stop;
+} LinkedHashTableValueIterator;
+
+typedef struct LinkedHashTableItemIterator {
+    NodeAttributes * NA;
+    Node * node;
+    DictItem * next_item;
+    enum iterator_status stop;
+} LinkedHashTableItemIterator;
 
 //used only for item iterator
 struct DictItem {
@@ -53,23 +71,20 @@ size_t LinkedHashTable_capacity(LinkedHashTable * hash_table);
 int LinkedHashTable_remove(LinkedHashTable * hash_table, void * key);
 void * LinkedHashTable_pop(LinkedHashTable * hash_table, void * key);
 int LinkedHashTable_resize(LinkedHashTable * hash_table, size_t capacity);
-LinkedHashTableKeyIterator * LinkedHashTable_keys(LinkedHashTable * hash_table, bool reversed);
-LinkedHashTableValueIterator * LinkedHashTable_values(LinkedHashTable * hash_table, bool reversed);
-LinkedHashTableItemIterator * LinkedHashTable_items(LinkedHashTable * hash_table, bool reversed);
+LinkedHashTableKeyIterator * LinkedHashTable_keys(LinkedHashTable * hash_table);
+LinkedHashTableValueIterator * LinkedHashTable_values(LinkedHashTable * hash_table);
+LinkedHashTableItemIterator * LinkedHashTable_items(LinkedHashTable * hash_table);
 
-LinkedHashTableKeyIterator * LinkedHashTableKeyIterator_new(LinkedHashTable * hash_table, bool reversed);
-LinkedHashTableValueIterator * LinkedHashTableValueIterator_new(LinkedHashTable * hash_table, bool reversed);
-LinkedHashTableItemIterator * LinkedHashTableItemIterator_new(LinkedHashTable * hash_table, bool reversed);
-void LinkedHashTableKeyIterator_init(LinkedHashTableKeyIterator * key_iter, LinkedHashTable * hash_table, bool reversed);
-void LinkedHashTableValueIterator_init(LinkedHashTableValueIterator * value_iter, LinkedHashTable * hash_table, bool reversed);
-void LinkedHashTableItemIterator_init(LinkedHashTableItemIterator * item_iter, LinkedHashTable * hash_table, bool reversed);
+LinkedHashTableKeyIterator * LinkedHashTableKeyIterator_new(LinkedHashTable * hash_table);
+LinkedHashTableValueIterator * LinkedHashTableValueIterator_new(LinkedHashTable * hash_table);
+LinkedHashTableItemIterator * LinkedHashTableItemIterator_new(LinkedHashTable * hash_table);
+void LinkedHashTableKeyIterator_init(LinkedHashTableKeyIterator * key_iter, LinkedHashTable * hash_table);
+void LinkedHashTableValueIterator_init(LinkedHashTableValueIterator * value_iter, LinkedHashTable * hash_table);
+void LinkedHashTableItemIterator_init(LinkedHashTableItemIterator * item_iter, LinkedHashTable * hash_table);
 void LinkedHashTableKeyIterator_del(LinkedHashTableKeyIterator * key_iter);
 void LinkedHashTableValueIterator_del(LinkedHashTableValueIterator * value_iter);
 void LinkedHashTableItemIterator_del(LinkedHashTableItemIterator * item_iter);
 
-LinkedHashTableKeyIterator * LinkedHashTableKeyIterator_iter(LinkedHashTable * hash_table, bool reversed);
-LinkedHashTableValueIterator * LinkedHashTableValueIterator_iter(LinkedHashTable * hash_table, bool reversed);
-LinkedHashTableItemIterator * LinkedHashTableItemIterator_iter(LinkedHashTable * hash_table, bool reversed);
 const void * LinkedHashTableKeyIterator_next(LinkedHashTableKeyIterator * key_iter);
 void * LinkedHashTableValueIterator_next(LinkedHashTableValueIterator * value_iter);
 DictItem * LinkedHashTableItemIterator_next(LinkedHashTableItemIterator * item_iter);

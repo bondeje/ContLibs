@@ -11,7 +11,7 @@
 
 struct Slice {
 	size_t start;
-	size_t stop;
+	size_t end;
 	long long step;
 };
 
@@ -32,20 +32,19 @@ enum slice_error_code {
 	SLICE_STOP = 1,
 };
 
-Slice * Slice_new(size_t start, size_t stop, long long step);
-void Slice_init(Slice * sl, size_t start, size_t stop, long long step);
+Slice * Slice_new(size_t start, size_t end, long long step);
+void Slice_init(Slice * sl, size_t start, size_t end, long long step);
 void Slice_del(Slice * sl);
 
-size_t shift_index_to_positive(long long, size_t);
+//size_t shift_index_to_positive(long long, size_t);
 
 SliceIterator * SliceIterator_new(Slice *);
 void SliceIterator_init(SliceIterator *, Slice *);
 void SliceIterator_del(SliceIterator *);
-SliceIterator * SliceIterator_iter(Slice *);
 size_t SliceIterator_next(SliceIterator *);
 void _SliceIterator_stop(SliceIterator *);
 
-SliceIterator * SliceIteratorIterator_iter(SliceIterator *);
+void SliceIteratorIterator_iter(SliceIteratorIterator *, SliceIterator *);
 size_t SliceIteratorIterator_next(SliceIterator *);
 void _SliceIteratorIterator_stop(SliceIterator *);
 

@@ -299,61 +299,60 @@ DequeIterator * DequeIterator_new(Deque * deq) {
 
 // pass NULL to deq to ignore the remainder of the arguments and just reset the deque_iterator
 void DequeIterator_init(DequeIterator * deq_iter, Deque * deq) {
+	if (!deq_iter) {
+		return;
+	}
+	if (!deq) {
+		deq_iter->sl_iter.stop = ITERATOR_STOP;
+	}
     deq_iter->deq = deq;
-    Slice sl;
-    if (deq_iter->deq->reversed) {
+    if (deq->reversed) {
         // TODO: this does not work since the start & stop must be positive. Need a way to handle iteration of a reversed container down to 0
-        Slice_init(&sl, deq_iter->deq->size - 1, -1, -1);
+        Slice_init(&deq_iter->sl_iter.sl, deq_iter->deq->size - 1, 0, -1);
     } else {
-        Slice_init(&sl, 0, deq->size, 1);
+        Slice_init(&deq_iter->sl_iter.sl, 0, deq->size, 1);
     }
-    SliceIterator sl_iter = {sl};
-    SliceIterator_init(&sl_iter, NULL);
-    deq_iter->sl_iter = sl_iter;
-
-    deq_iter->next = Deque_get(deq_iter->deq, SliceIterator_next(& (deq_iter->sl_iter)));
-	deq_iter->stop = deq_iter->sl_iter.stop;
+    SliceIterator_init(&deq_iter->sl_iter, &deq_iter->sl_iter.sl);
 }
 
 void DequeIterator_del(DequeIterator * deq_iter) {
 	CL_FREE(deq_iter);
 }
 
-DequeIterator * DequeIterator_iter(Deque * deq) {
-    return DequeIterator_new(deq);
-}
-
 void * DequeIterator_next(DequeIterator * deq_iter) {
+	if (!deq_iter) {
+		return NULL;
+	}
     size_t index = SliceIterator_next(&(deq_iter->sl_iter));
-	deq_iter->stop = deq_iter->sl_iter.stop;
-    if (deq_iter->stop) {
+    if (deq_iter->sl_iter.stop) {
         return NULL;
     }
-    deq_iter->next = Deque_get(deq_iter->deq, index);
-	return deq_iter->next;
+	return Deque_get(deq_iter->deq, index);
 }
 
 enum iterator_status DequeIterator_stop(DequeIterator * deq_iter) {
     if (!deq_iter) {
         return ITERATOR_STOP;
     }
-    if (deq_iter->stop == ITERATOR_STOP) {
-        DequeIterator_del(deq_iter);
-        return ITERATOR_STOP;
-    }
-    return deq_iter->stop;
+    return deq_iter->sl_iter.stop;
 }
 
-
-DequeIterator * DequeIteratorIterator_iter(DequeIterator * deq_iter) {
-    return deq_iter;
+void DequeIteratorIterator_init(DequeIteratorIterator * deq_iter_iter, DequeIterator * deq_iter) {
+	if (!deq_iter_iter) {
+		return;
+	}
+	if (!deq_iter) {
+		deq_iter_iter->sl_iter.stop = ITERATOR_STOP;
+		return;
+	}
+	*deq_iter_iter = *deq_iter;
 }
 
-void * DequeIteratorIterator_next(DequeIterator * deq_iter) {
+void * DequeIteratorIterator_next(DequeIteratorIterator * deq_iter) {
 	return DequeIterator_next(deq_iter);
 }
 
-enum iterator_status DequeIteratorIterator_stop(DequeIterator * deq_iter) {
+enum iterator_status DequeIteratorIterator_stop(DequeIteratorIterator * deq_iter) {
     return DequeIterator_stop(deq_iter);
 }
 
@@ -531,16 +530,14 @@ void * Deque_remove(Deque * deq, size_t index) {
 	return val;
 }
 
-DequeIterator * Deque_slice(Deque * deq, size_t start, size_t stop, long long step) {
+DequeIterator * Deque_slice(Deque * deq, size_t start, size_t end, long long step) {
 	
 	Slice sl;
-	Slice_init(&sl, start, stop, step);
-	SliceIterator sl_iter = {sl};
-	SliceIterator_init(&sl_iter, NULL);
-	DequeIterator * deq_iter = (DequeIterator *) CL_MALLOC(sizeof(DequeIterator));
-	deq_iter->deq = deq;
+	Slice_init(&sl, start, end, step);
+	SliceIterator sl_iter;
+	SliceIterator_init(&sl_iter, &sl);
+	DequeIterator * deq_iter = DequeIterator_new(deq);
 	deq_iter->sl_iter = sl_iter;
-	DequeIterator_init(deq_iter, NULL);
 	
 	return deq_iter;
 }

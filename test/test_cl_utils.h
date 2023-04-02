@@ -1,6 +1,6 @@
 // MUST RUN WITH NDEBUG defined in order to pass
 
-#include "../src/cl_core.h" // core includes cl_utils.h
+#include "cl_core.h" // core includes cl_utils.h
 #include <stdio.h>
 #include <stdlib.h> // size_t, SIZE_MAX for size_t
 #include <time.h>

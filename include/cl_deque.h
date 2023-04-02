@@ -13,8 +13,6 @@ constructed with one of several containers: WrappedArray, DblLinkedList,
 CircularList (as a specialization of DblLinkedList) and use their functions
 */
 
-// TODO: replace push_* with insert, pop_* with remove, peek_* with get
-// TODO: Deque_remove: 
 // TODO: Deque_index: find index of first node with given value specifying starting point
 // TODO: Deque_count
 // TODO: Deque_contains: wrap find first. if 
@@ -37,23 +35,18 @@ enum deque_status {
 	CL_DEQUE_SUCCESS = 0
 };
 
-struct Deque {
+typedef struct Deque {
 	void ** data;		// pointer to pointers
 	size_t capacity;	// allocation size
 	size_t size;		// number of elements stored in the Deque
 	size_t head;		// index location of start of array (index 0)
 	bool reversed;
-};
-typedef struct Deque Deque;
+} Deque;
 
-struct DequeIterator {
-	Deque * deq;
+typedef struct DequeIterator {
 	SliceIterator sl_iter;
-	void * next;
-	unsigned char stop;
-};
-typedef struct DequeIterator DequeIterator;
-typedef struct DequeIterator DequeIteratorIterator;
+	Deque * deq;
+} DequeIterator, DequeIteratorIterator;
 
 // Public API
 
@@ -75,13 +68,13 @@ Deque * Deque_copy(Deque * deq);
 DequeIterator * DequeIterator_new(Deque * deq);
 void DequeIterator_init(DequeIterator * deq_iter, Deque * deq);
 void DequeIterator_del(DequeIterator * deq_iter);
-DequeIterator * DequeIterator_iter(Deque * deq);
+void DequeIterator_init(DequeIterator * deq_iter, Deque * deq);
 void * DequeIterator_next(DequeIterator * deq_iter);
 enum iterator_status DequeIterator_stop(DequeIterator * deq_iter);
 
-DequeIterator * DequeIteratorIterator_iter(DequeIterator * deq_iter);
-void * DequeIteratorIterator_next(DequeIterator * deq_iter);
-enum iterator_status DequeIteratorIterator_stop(DequeIterator * deq_iter);
+void DequeIteratorIterator_init(DequeIteratorIterator * deq_iter_iter, DequeIterator * deq_iter);
+void * DequeIteratorIterator_next(DequeIteratorIterator * deq_iter);
+enum iterator_status DequeIteratorIterator_stop(DequeIteratorIterator * deq_iter);
 
 void * Deque_peek_front(Deque * deq);
 void * Deque_peek_back(Deque * deq);

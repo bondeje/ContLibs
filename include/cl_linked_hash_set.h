@@ -25,8 +25,13 @@
 #endif
 
 typedef struct LinkedHashSet LinkedHashSet;
-typedef struct DictItem DictItem;
-typedef struct LinkedHashSetIterator LinkedHashSetIterator;
+
+typedef struct LinkedHashSetIterator {
+    NodeAttributes * NA;
+    Node * node;
+    const void * next_key;
+    enum iterator_status stop;
+} LinkedHashSetIterator;
 
 LinkedHashSet * LinkedHashSet_new(hash_t (*hash) (const void *, size_t), int (*comp) (const void *, const void *), size_t capacity, float max_load_factor, unsigned int flags, int narg_pairs, ...);
 void LinkedHashSet_init(LinkedHashSet * hash_set, hash_t (*hash) (const void *, size_t), int (*comp) (const void *, const void *), size_t capacity, float max_load_factor, NodeAttributes * NA);
@@ -38,11 +43,10 @@ size_t LinkedHashSet_capacity(LinkedHashSet * hash_set);
 int LinkedHashSet_remove(LinkedHashSet * hash_set, void * key);
 int LinkedHashSet_resize(LinkedHashSet * hash_set, size_t capacity);
 
-LinkedHashSetIterator * LinkedHashSetIterator_new(LinkedHashSet * hash_set, bool reversed);
-void LinkedHashSetIterator_init(LinkedHashSetIterator * iter, LinkedHashSet * hash_set, bool reversed);
+LinkedHashSetIterator * LinkedHashSetIterator_new(LinkedHashSet * hash_set);
+void LinkedHashSetIterator_init(LinkedHashSetIterator * iter, LinkedHashSet * hash_set);
 void LinkedHashSetIterator_del(LinkedHashSetIterator * iter);
 
-LinkedHashSetIterator * LinkedHashSetIterator_iter(LinkedHashSet * hash_set, bool reversed);
 const void * LinkedHashSetIterator_next(LinkedHashSetIterator * iter);
 enum iterator_status LinkedHashSetIterator_stop(LinkedHashSetIterator * iter);
 

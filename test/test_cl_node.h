@@ -1,10 +1,10 @@
 //#include "../src/cl_core.h" // core includes cl_utils.h
-#include "../src/cl_utils.h"
-#include "../src/cl_node.h"
 #include <stdio.h>
 #include <stdlib.h> // size_t, SIZE_MAX for size_t
 #include <time.h>
 #include <assert.h>
+#include "cl_utils.h"
+#include "cl_node.h"
 
 // TODO: add asserts instead of printfs
 int test_nodeattributes_new() {
@@ -105,7 +105,7 @@ int test_node_new() {
     Node_set(NA, node, COLOR, clr);
     printf("color sent %hhi, color retrieved %hhi\n", clr, Node_get(NA, node, COLOR));
 
-    const char * retrieve = Node_get(NA, node, KEY);
+    const char * retrieve = (const char *) Node_get(NA, node, KEY);
     printf("key sent: %s, key retrieved: %s\n", test, retrieve);
 
     Node_del(node);

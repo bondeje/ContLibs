@@ -1,7 +1,7 @@
-#include "../src/cl_container.h"
 #include <stdio.h>
 #include <stdlib.h> // size_t, SIZE_MAX for size_t
 #include <assert.h>
+#include "cl_container.h"
 
 int test_container_new() {
     printf("Testing cl_container.Container_new...");

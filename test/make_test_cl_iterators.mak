@@ -45,9 +45,9 @@ else
     #endif
 endif
 
-CFLAGS += -o test_cl_linked_hash_table$(EXT)
+CFLAGS += -o test_cl_iterators$(EXT)
 
 all: build
 
 build:
-	$(CC) $(CFLAGS) $(IFLAGS) test_cl_linked_hash_table.c ../src/cl_linked_hash_table.c ../src/cl_utils.c ../src/cl_node.c ../src/cl_hash_utils.c ../src/cl_iterators.c $(LFLAGS)
+	$(CC) $(CFLAGS) $(IFLAGS) test_cl_iterators.c ../src/cl_iterators.c ../src/cl_utils.c $(LFLAGS)

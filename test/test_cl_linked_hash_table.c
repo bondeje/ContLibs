@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
-#include "../src/cl_linked_hash_table.h"
+#include "cl_linked_hash_table.h"
 
 #define N_PRIMES 25
 #define MAX_PRIMES 100
