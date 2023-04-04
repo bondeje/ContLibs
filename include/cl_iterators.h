@@ -256,36 +256,97 @@ if (temp_obj) {                                                                 
 
 void iterative_parray_del(void ** obj, size_t num);
 
-// if it fails, no object is created and new_obj##_size is set to 0. Do not use the new_obj##_size as failure. failure is indicated by new_obj == NULL
-// only does a shallow copy
+// array comprehension
 /*
-// expression must take an inst_type * input and result in out_type *
-#define array_comprehension(out_type, new_obj, expression, inst_type, inst, objtype, ...)                                                    \
-size_t new_obj##_size = INIT_COMPREHENSION_SIZE;                                                                \
-out_type * new_obj = (out_type *) CL_ITERATOR_MALLOC(sizeof(out_type) * new_obj##_size);                           \
-{                                                                                                               \
-objtype##Iterator * objtype##new_obj##iter = objtype##Iterator_iter(__VA_ARGS__);
-bool comprehension_go = true;
-size_t comprehension_i = 0;
-inst_type * inst = objtype##Iterator_next(objtype##new_obj##iter);
-while (comprehension_go && !(objtype##Iteratorend(objtype##new_obj##iter)==ITERATOR_STOP)) {
-    if (comprehension_i >= new_obj##_size) {
-        RESIZE_REALLOC(comprehension_go, out_type, new_obj, new_obj##_size * COMPREHENSION_SCALE);
-        if (!comprehension_go) {
-            objtype##Iterator_del(objtype##new_obj##iter);
-            ITERATOR_FREE(new_obj);
-            continue;
-        }
-        new_obj##_size *= COMPREHENSION_SCALE;
-    }
-    new_obj[comprehension_i] = expression;
-    comprehension_i++;
-    inst = objtype##Iterator_next(objtype##new_obj##iter);
-}
-if (new_obj##_size > comprehension_i) {
-    RESIZE_REALLOC(comprehension_go, out_type, new_obj, comprehension_i);
-    new_obj##_size = comprehension_i;
-}
+python's list comprehension follows the pattern:
+new_object = [function(element in iterable) for element in iterable]
+
+adding c-style type hints for an iterable container holding elements of type TYPE resulting in an array holding type TYPE_OUT, this looks like
+
+TYPE_OUT ** new_object = [void (*function)(TYPE_OUT * element_out, TYPE_IN * element_in) for_each(TYPE_IN, element_in, ITERABLE_TYPE, ...)]
+
+Expressing this 5+ parameter equation into a macro (element is not an actual input):
+
+array_comprehension(TYPE_OUT, new_object, function, TYPE_IN, element, ITERABLE_TYPE, ...)
+
+where the variadic is the same as that which is used in for_each macro
 */
+#define COPY_ELEMENT(A,B) *(A) = *(B)
+#define array_comprehension(type_out, new_obj, function, type_in, iterable, ...)                        \
+type_out * new_obj = (type_out *) CL_MALLOC(sizeof(type_out)*INIT_COMPREHENSION_SIZE);                  \
+size_t new_obj##_capacity = INIT_COMPREHENSION_SIZE;                                                    \
+{                                                                                                       \
+size_t comprehension_size = 0;                                                                          \
+for_each_enumerate(type_in, iterable##_inst, iterable, __VA_ARGS__) {                                   \
+    if (iterable##_inst.i >= new_obj##_capacity) { /* need to realloc */                                \
+        bool comprehension_go = true;                                                                   \
+        RESIZE_REALLOC(comprehension_go, type_out, new_obj, new_obj##_capacity * COMPREHENSION_SCALE);  \
+        if (comprehension_go) {                                                                         \
+            new_obj##_capacity *= COMPREHENSION_SCALE;                                                  \
+        }                                                                                               \
+    }                                                                                                   \
+    if (iterable##_inst.i < new_obj##_capacity) {                                                       \
+        function((type_out*)new_obj + iterable##_inst.i, (type_in*)iterable##_inst.val);                \
+        comprehension_size = iterable##_inst.i+1;                                                       \
+    }                                                                                                   \
+}                                                                                                       \
+if (new_obj##_capacity > comprehension_size) {                                                          \
+    bool comprehension_go = true;                                                                       \
+    RESIZE_REALLOC(comprehension_go, type_out, new_obj, comprehension_size);                            \
+    if (comprehension_go) {                                                                             \
+        new_obj##_capacity = comprehension_size;                                                        \
+    }                                                                                                   \
+}                                                                                                       \
+}                                                                                                       \
+
+typedef struct Filter {
+    void * iter_obj; // underlying iterator structure
+    void * (*iter_next)(void *); // takes iter_obj as input and outputs an element of the object
+    enum iterator_status (*iter_stop)(void*); // takes iter_obj and returns status
+    bool (*func)(void*);
+} Filter;
+
+typedef struct FilterIterator {
+    Filter * filt;
+    enum iterator_status stop;
+} FilterIterator;
+
+void Filter_init(Filter * filt, bool (*func)(void*), void * iter_obj, void * (*iter_next)(void*), enum iterator_status (*iter_stop)(void*));
+void FilterIterator_init(FilterIterator * filt_iter, Filter * filt);
+void * FilterIterator_next(FilterIterator * filt_iter);
+enum iterator_status FilterIterator_stop(FilterIterator * filt_iter);
+
+/*
+create a filterIterable object that matches python's filter(function, iterable built-in)
+the three named macro parameters must be unique in a local scope
+iterator object is statically allocated
+pfilter_obj is a pointer to the Filter object.
+*/
+#define filter(pfilter_obj, function, iterable_type, ...)                                                                                   \
+iterable_type##Iterator filter_##function##iterable_type##_iter;                                                                            \
+iterable_type##Iterator_init(&filter_##function##iterable_type##_iter, __VA_ARGS__);                                                        \
+Filter_init(pfilter_obj, function, &filter_##function##iterable_type##_iter, (void* (*)(void*))iterable_type##Iterator_next, (enum iterator_status (*)(void*))iterable_type##Iterator_stop)    \
+
+/* TODO: slice
+typedef struct Slice {
+    void * iter_obj;
+    void * (*iter_next)(void*);
+    enum iterator_status (*iter_stop)(void*);
+    size_t start;
+    size_t end;
+    long long int step;
+} Slice;
+
+typedef struct SliceIterator {
+    Slice * sl;
+    enum iterator_status stop;
+}
+
+#define slice(pslice_inst, iterable_type, iterable_inst, ...)\
+iterable_type##Iterator pslice_inst##iterable_type##_iter;
+iterable_type##Iterator_init(&pslice_inst##iterable_type##_iter;)
+
+*/
+
 
 #endif // ITERATORS_H

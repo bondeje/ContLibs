@@ -123,8 +123,91 @@ int test_array_clear(void) {
     return CL_SUCCESS;
 }
 
+bool long_divisible_by_2(void * pl) {
+    //long l = *(long*)pl;
+    //printf("\nlong_divisible_by_2 received pointer at %p", pl);
+    //printf("\n%ld is divisible by 2? %s", l, ((l%2)==0) ? "true" : "false");
+    return (*(long*)pl % 2) == 0;
+}
+bool long_divisible_by_3(void * pl) {
+    return ((*(long*)pl) % 3) == 0;
+}
+bool long_divisible_by_7(void * pl) {
+    return ((*(long*)pl) % 7) == 0;
+}
+
+int test_filter(void) {
+    printf("Testing filtering of array...");
+    long arr[] = {123456, 234567, 345678, 456789, 567890, 2039784, 1230987, 493583, 1843985};
+    long div2arr[] = {123456, 345678, 567890, 2039784};
+    size_t div2arr_size = 4;
+    long div3arr[] = {123456, 234567, 345678, 456789, 2039784, 1230987};
+    size_t div3arr_size = 6;
+    long div7arr[] = {0};
+    size_t div7arr_size = 0;
+    size_t i = 0;
+
+    //printf("\ntesting divisible by 2...should have 4 results");
+    Filter div2;
+    i = 0;
+    filter(&div2, long_divisible_by_2, long, arr, 9);
+    for_each(long, val2, Filter, &div2) {
+        ASSERT(i < div2arr_size, "\nfound too many values divisible by 2 in test_filter. Found: %zu, expected: %zu", i, div2arr_size);
+        ASSERT(*val2 == div2arr[i], "\nfound an unexpected value divisible by 2 in test_filter. Found: %ld, expected: %ld", *val2, div2arr[i]);
+        i++;
+    }
+    ASSERT(i == div2arr_size, "\nfailed to find the right total number of values divisible by 2 in test_filter. Found: %zu, expected: %zu", i, div2arr_size);
+
+    //printf("\ntesting divisible by 3...should be none");
+    Filter div3;
+    i = 0;
+    filter(&div3, long_divisible_by_3, long, arr, 9);
+    for_each(long, val3, Filter, &div3) {
+        ASSERT(i < div3arr_size, "\nfound too many values divisible by 3 in test_filter. Found: %zu, expected: %zu", i, div3arr_size);
+        ASSERT(*val3 == div3arr[i], "\nfound an unexpected value divisible by 3 in test_filter. Found: %ld, expected: %ld", *val3, div3arr[i]);
+        i++;
+    }
+    ASSERT(i == div3arr_size, "\nfailed to find the right total number of values divisible by 3 in test_filter. Found: %zu, expected: %zu", i, div3arr_size);
+
+    //printf("\ntesting divisible by 7...should be none");
+    Filter div7;
+    i = 0;
+    filter(&div7, long_divisible_by_7, long, arr, 9);
+    for_each(long, val7, Filter, &div7) {
+        ASSERT(i < div7arr_size, "\nfound too many values divisible by 7 in test_filter. Found: %zu, expected: %zu", i, div7arr_size);
+        ASSERT(*val7 == div7arr[i], "\nfound an unexpected value divisible by 7 in test_filter. Found: %ld, expected: %ld", *val7, div7arr[i]);
+        i++;
+    }
+    ASSERT(i == div7arr_size, "\nfailed to find the right total number of values divisible by 7 in test_filter. Found: %zu, expected: %zu", i, div7arr_size);
+
+    printf("PASS\n");
+    return CL_SUCCESS;
+}
+
+int test_array_comprehension(void) {
+    printf("Testing array comprehension...");
+    long arr[] = {123456, 234567, 345678, 456789, 567890, 2039784, 1230987, 493583, 1843985};
+    long div2arr[] = {123456, 345678, 567890, 2039784};
+    size_t div2arr_size = 4;
+
+    //printf("\ntesting divisible by 2...should have 4 results");
+    Filter div2;
+    filter(&div2, long_divisible_by_2, long, arr, 9);
+    array_comprehension(long, new_arr, COPY_ELEMENT, long, Filter, &div2);
+
+    ASSERT(div2arr_size == new_arr_capacity, "\nfailed at comparing size. Found: %zu, expected: %zu", new_arr_capacity, div2arr_size);
+    for (int i = 0; i < new_arr_capacity; i++) {
+        ASSERT(new_arr[i] == div2arr[i], "\nfailed in array generatation at index %d. Found: %ld, expected: %ld", i, new_arr[i], div2arr[i]);
+    }
+
+    printf("PASS\n");
+    return CL_SUCCESS;
+}
+
 int main(void) {
     test_array_iterator();
     test_array_clear();
+    test_filter();
+    test_array_comprehension();
     return 0;
 }
