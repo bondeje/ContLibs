@@ -200,6 +200,8 @@ int test_array_comprehension(void) {
         ASSERT(new_arr[i] == div2arr[i], "\nfailed in array generatation at index %d. Found: %ld, expected: %ld", i, new_arr[i], div2arr[i]);
     }
 
+    CL_FREE(new_arr);
+
     printf("PASS\n");
     return CL_SUCCESS;
 }
