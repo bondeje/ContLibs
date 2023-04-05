@@ -237,15 +237,14 @@ type##Iterator * type##_slice(type * array, size_t num, size_t start, size_t end
     return iter;                                                                            \
 }                                                                                           \
 
-// The combination (objtype, inst) must be unique within a local scope
-// variadic argument are the arguments in available constructors 
-#define for_each(insttype, inst, objtype, ...)								        \
-objtype##Iterator objtype##_##inst##_iter;                                          \
-objtype##Iterator_init(&objtype##_##inst##_iter, __VA_ARGS__);                      \
-for (insttype * inst = (insttype *) objtype##Iterator_next(&objtype##_##inst##_iter); !objtype##Iterator_stop(&objtype##_##inst##_iter); inst = (insttype *) objtype##Iterator_next(&objtype##_##inst##_iter))
+#define for_each(insttype, inst, iterable_type, ...)								        \
+iterable_type##Iterator UNIQUE_VAR_NAME(inst##iterable_type);                                           \
+iterable_type##Iterator_init(&UNIQUE_VAR_NAME(inst##iterable_type), __VA_ARGS__);                      \
+for (insttype * inst = (insttype *) iterable_type##Iterator_next(&UNIQUE_VAR_NAME(inst##iterable_type)); !iterable_type##Iterator_stop(&UNIQUE_VAR_NAME(inst##iterable_type)); inst = (insttype *) iterable_type##Iterator_next(&UNIQUE_VAR_NAME(inst##iterable_type)))
 
 // The combination (objtype, inst) must be unique within a local scope as well as inst itself as a variable
 // variadic argument are the arguments in available constructors
+// TODO: replace with Enumerate iterable object when feature is ready
 #define for_each_enumerate(insttype, inst, objtype, ...)                            \
 objtype##Iterator objtype##_##inst##_iter;                                          \
 objtype##Iterator_init(&objtype##_##inst##_iter, __VA_ARGS__);                      \
@@ -327,11 +326,6 @@ iterable_type##Iterator_init(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);     
 Iterator_init(piter_inst, (void*)&UNIQUE_VAR_NAME(iterable_type), (void* (*)(void*)) iterable_type##Iterator_next, (enum iterator_status (*)(void*)) iterable_type##Iterator_stop);\
 
 typedef struct Filter {
-    /*
-    void * iter_obj; // underlying iterator structure
-    void * (*iter_next)(void *); // takes iter_obj as input and outputs an element of the object
-    enum iterator_status (*iter_stop)(void*); // takes iter_obj and returns status
-    */
     Iterator iter;
     bool (*func)(void*);
 } Filter, FilterIterator;
@@ -344,6 +338,8 @@ typedef struct FilterIterator {
 */
 
 void Filter_init(Filter * filt, bool (*func)(void*), void * iter_obj, void * (*iter_next)(void*), enum iterator_status (*iter_stop)(void*));
+void * Filter_next(Filter * filt);
+enum iterator_status Filter_stop(Filter * iter);
 void FilterIterator_init(FilterIterator * filt_iter, Filter * filt);
 void * FilterIterator_next(FilterIterator * filt_iter);
 enum iterator_status FilterIterator_stop(FilterIterator * filt_iter);
@@ -362,75 +358,44 @@ iterable_type##Iterator UNIQUE_VAR_NAME(iterable_type);\
 iterable_type##Iterator_init(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);\
 Filter_init(pfilter_obj, function, &UNIQUE_VAR_NAME(iterable_type), (void* (*)(void*))iterable_type##Iterator_next, (enum iterator_status (*)(void*))iterable_type##Iterator_stop)    \
 
-/* TODO: slice
+//TODO: slice
 #define declare_array_sequence(type)            \
-type * type##_get(type # seq, size_t index);    \
-declare_array_sizeable(type)                    \
+type * type##_get(type * seq, size_t index);    \
 
 #define define_array_sequence(type)             \
 type * type##_get(type * seq, size_t index) {   \
     return seq + index;                         \
 }                                               \
-define_array_sizeable(type)                     \
 
-void Slice_init(Slice * sl, void * obj, void*(*get)(void*, size_t), size_t start, size_t stop, long long int step) {
-    sl->obj = obj;
-    sl->get = get;
-    sl->loc = start;
-    sl->start = start;
-    sl->stop = stop;
-    sl->step = step;
-}
-
-void SliceIterator_init(SliceIterator * sl_iter, Slice * sl) {
-    sl_iter->sl = sl;
-    if (sl->loc >= sl->stop) {
-        sl_iter->stop = ITERATOR_STOP;
-    } else {}
-        sl_iter->stop = ITERATOR_PAUSE;
-    }
-}
-
-void * SliceIterator_next(SliceIterator * sl_iter) {
-    if (!sl_iter || sl_iter->stop == ITERATOR_STOP) {
-        return NULL;
-    }
-    if (sl_iter->stop == ITERATOR_PAUSE) {
-        sl_iter->stop = ITERATOR_GO;
-    } else {
-        Slice * sl = sl_iter->sl;
-        if (sl->step > 0) {
-            if (sl->stop - sl->loc <= sl->step) {
-                sl_iter->stop = ITERATOR_STOP;
-                return NULL;
-            }
-            sl->loc += sl->step;
-        } else {
-            if (sl->loc - sl->stop <= -sl->step) {
-                sl_iter->stop = ITERATOR_STOP;
-                return NULL;
-            }
-            sl->loc += sl->step;
-        }
-    }
-    return sl->get(sl->obj, sl->loc)
-}
-
-enum iterator_status SliceIterator_stop(SliceIterator * sl_iter) {
-    return sl_iter->stop;
-}
 
 #define SLICE_CORRECT_STEP_SIGN(start, stop, step) (start <= stop ? (step ? REFLECT_TO_POS(step) : 1) : (step ? REFLECT_TO_NEG(step) : -1))
 
-#define SLICE1(pslice_inst, sliceable_type, obj, size, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, 0, stop, 1)
-#define SLICE2(pslice_inst, sliceable_type, obj, size, start, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, start, stop, 1)
+#define SLICE1(pslice_inst, sliceable_type, obj, size, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, 0, stop, 1)
+#define SLICE2(pslice_inst, sliceable_type, obj, size, start, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, start, stop, 1)
 #define SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, start, stop, step) SLICE3(pslice_inst, sliceable_type, obj, size, CYCLE_TO_POS(start, size), CYCLE_TO_POS(stop, size), step)
 #define SLICE3(pslice_inst, sliceable_type, obj, size, start, stop, step)\
-Slice_init(pslice_inst, (void*)obj, ((void*)(*)(void*))sliceable_type##_get, size, start, stop, SLICE_CORRECT_STEP_SIGN(start, stop, step))
+Slice_init(pslice_inst, (void*)obj, (void* (*)(void*, size_t))sliceable_type##_get, size, start, stop, SLICE_CORRECT_STEP_SIGN(start, stop, step))
 
 #define GET_SLICE_MACRO(_1,_2,_3,SLICE_MACRO,...) SLICE_MACRO
-#define slice(pslice_inst, sliceable_type, obj, size, ...) GET_SLICE_MACRO(__VA_ARGS__, SLICE3_HELPER, SLICE2, SLICE1, UNUSED)(pslice_inst, sliceable_type, obj, __VA_ARGS__)
-*/
+#define slice(pslice_inst, sliceable_type, obj, size, ...) GET_SLICE_MACRO(__VA_ARGS__, SLICE3_HELPER, SLICE2, SLICE1, UNUSED)(pslice_inst, sliceable_type, obj, size, __VA_ARGS__)
+
+typedef struct Slice {
+    void * obj;
+    void * (*get)(void *, size_t);
+    size_t loc;
+    size_t size;
+    size_t start;
+    size_t end;
+    long long int step;
+    enum iterator_status stop;
+} Slice, SliceIterator;
+
+void Slice_init(Slice * sl, void * obj, void*(*get)(void*, size_t), size_t size, size_t start, size_t stop, long long int step);
+void * Slice_next(Slice * sl);
+enum iterator_status Slice_stop(Slice * sl);
+void SliceIterator_init(SliceIterator * sl_iter, Slice * sl);
+void * SliceIterator_next(SliceIterator * sl_iter);
+enum iterator_status SliceIterator_stop(SliceIterator * sl_iter);
 
 /* TODO: reversed
 #define declare_array_reversible(sequence_type)\
@@ -517,6 +482,23 @@ iterable_type##Iterator UNIQUE_VAR_NAME(iterable_type);\
 iterable_type##Iterator_init(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);      \
 Enumerator_init(penum_inst, (void*)&UNIQUE_VAR_NAME(iterable_type), (void* (*)(void*)) iterable_type##Iterator_next, (enum iterator_status (*)(void*)) iterable_type##Iterator_stop);\
 
+*/
+
+/* // Some cool-ass macros we can do with Iterables
+// it is assumed poutput is a pointer to the correct type
+#define sum(type, poutput, iterable_type, ...)\
+Iterator UNIQUE_VAR_NAME(iterable_type);
+iterate(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);
+for_each(type, el, Iterator, UNIQUE_VAR_NAME(iterable_type)) {
+    *poutput += *el;
+}
+
+#define product(type, poutput, iterable_type, ...)\
+Iterator UNIQUE_VAR_NAME(iterable_type);
+iterate(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);
+for_each(type, el, Iterator, UNIQUE_VAR_NAME(iterable_type)) {
+    *poutput *= *el;
+}
 */
 
 
