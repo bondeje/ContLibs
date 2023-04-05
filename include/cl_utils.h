@@ -40,6 +40,13 @@
 #endif // CL_REALLOC
 
 #define IS_NEG(X) (!((X) > 0) && ((X) != 0))
+#define CYCLE_TO_POS(X, CYCLE_SIZE) (IS_NEG(X) ? X + CYCLE_SIZE : X)
+#define REFLECT_TO_POS(X) (IS_NEG(X) ? -1*X : X)
+#define REFLECT_TO_NEG(X) (IS_NEG(X) ? X : -1*X)
+
+#define CONCAT2(A,B) A##B
+#define CONCAT(A,B) CONCAT2(A,B)
+#define UNIQUE_VAR_NAME(BASENAME) CONCAT(BASENAME,__LINE__)
 
 // unfortunately, we cannot build the macro that builds the __VA_ARGS__ overloading macros
 // swapping elements at two locations A and B of size C, with optional buffer D

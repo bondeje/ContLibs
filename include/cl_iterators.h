@@ -1,4 +1,8 @@
-// TODO: replace start, end, step in array iterators with slices/slice Iterators
+// TODO: replace start, end, step in array iterators with slices/slice Iterators...in testing
+// TODO: replace size_t num in array iterators new & init with calculations sizeof(arr)/sizeof(arr[0])
+// TODO: replace array_type##_slice with slice iterators
+// TODO: fix array_type##Iterator_next's logic with the macros of slicers
+
 
 /*
 Requirements: In order to use the facilities in this header, it is assumed that for a given OBJECT
@@ -101,35 +105,41 @@ this macro generates the header declarations for an array of type 'type', e.g. i
 is type * object, declare_array_iterator(type) will make all the appropriate declarations for 
 typeIterator objects
 */
-#define declare_array_iterator(type)                                        \
-typedef struct type##Iterator {                                                                     \
-    type * array;                                                                           \
-    size_t num;                                                                             \
-    size_t loc;                                                                             \
-    size_t start;                                                                           \
-    size_t end;                                                                             \
-    long long int step;                                                                     \
-    enum iterator_status stop;                                                              \
-}type##Iterator, type##IteratorIterator;                                    \
-type##Iterator * type##Iterator_new(type * array, size_t num);              \
-void type##Iterator_init(type##Iterator * iter, type * array, size_t num);  \
-void type##Iterator_del(type##Iterator * iter);                             \
-type * type##Iterator_next(type##Iterator * iter);                          \
-enum iterator_status type##Iterator_stop(type##Iterator * iter);            \
-size_t type##Iterator_elem_size(type##Iterator *iter);                      \
-void type##IteratorIterator_init(type##IteratorIterator *iter_iter, type##Iterator * iter);         \
-type * type##IteratorIterator_next(type##Iterator *iter);                   \
-enum iterator_status type##IteratorIterator_stop(type##Iterator *iter);     \
-size_t type##IteratorIterator_elem_size(type##Iterator *iter);              \
+#define declare_array_iterable(type)                                                                    \
+typedef struct type##Iterator {                                                                         \
+    type * array;                                                                                       \
+    size_t num;                                                                                         \
+    size_t loc;                                                                                         \
+    size_t start;                                                                                       \
+    size_t end;                                                                                         \
+    long long int step;                                                                                 \
+    enum iterator_status stop;                                                                          \
+}type##Iterator, type##IteratorIterator;                                                                \
+type##Iterator * type##Iterator_new(type * array, size_t num);                                          \
+void type##Iterator_init(type##Iterator * iter, type * array, size_t num);                              \
+void type##Iterator_del(type##Iterator * iter);                                                         \
+type * type##Iterator_next(type##Iterator * iter);                                                      \
+enum iterator_status type##Iterator_stop(type##Iterator * iter);                                        \
+size_t type##Iterator_elem_size(type##Iterator *iter);                                                  \
+void type##IteratorIterator_init(type##IteratorIterator *iter_iter, type##Iterator * iter);             \
+type * type##IteratorIterator_next(type##Iterator *iter);                                               \
+enum iterator_status type##IteratorIterator_stop(type##Iterator *iter);                                 \
+size_t type##IteratorIterator_elem_size(type##Iterator *iter);                                          \
 type##Iterator * type##_slice(type * array, size_t num, size_t start, size_t stop, long long int step); \
 
-declare_array_iterator(double)
-declare_array_iterator(float)
-declare_array_iterator(long)
-declare_array_iterator(int)
-declare_array_iterator(char)
-declare_array_iterator(size_t)
-declare_array_iterator(pvoid)
+declare_array_iterable(double)
+declare_array_iterable(float)
+declare_array_iterable(long)
+declare_array_iterable(int)
+declare_array_iterable(char)
+declare_array_iterable(size_t)
+declare_array_iterable(pvoid)
+
+#define define_array_sizeable(type)     \
+static inline size_t type##_size(type * seq) {        \
+    return sizeof(seq)/sizeof(type);    \
+}                                       \
+
 
 /* 
 this macro generates the implementation definitions for an array of type 'type', e.g. if your 
@@ -139,7 +149,7 @@ definitions for typeIterator objects
 type must be a single token. To use with pointers, have to typedef the pointer (not recommended for readability)
 also, have to typedef the multiple reserved word types: long [long] [int], unsigned long [long] [int], etc.
 */
-#define define_array_iterator(type)                                                         \
+#define define_array_iterable(type)                                                         \
 type##Iterator * type##Iterator_new(type * array, size_t num) {                             \
     if (!array || !num) {                                                                   \
         return NULL;                                                                        \
@@ -160,18 +170,18 @@ void type##Iterator_init(type##Iterator * iter, type * array, size_t num) {     
     iter->num = num;                                                                        \
     iter->start = 0;                                                                        \
     iter->step = 1;                                                                         \
-    iter->end = num-1;                                                                      \
+    iter->end = num;                                                                        \
     iter->stop = ITERATOR_PAUSE;                                                            \
 }                                                                                           \
 void type##Iterator_del(type##Iterator * iter) {                                            \
     CL_FREE(iter);                                                                          \
 }                                                                                           \
 type * type##Iterator_next(type##Iterator * iter) {                                         \
-    if (!iter) {                                                                            \
+    if (!iter || iter->stop == ITERATOR_STOP) {                                             \
         return NULL;                                                                        \
     }                                                                                       \
     if (iter->stop == ITERATOR_GO) {                                                        \
-        if (((iter->step > 0) && (iter->end - iter->loc < iter->step)) || ((iter->step < 0) && (iter->loc - iter->end < -iter->step))) {    \
+        if (((iter->step > 0) && (iter->end - iter->loc <= iter->step)) || ((iter->step < 0) && (iter->loc - iter->end <= -iter->step))) { /*get rid of second condition when slice(...) is available*/    \
             iter->stop = ITERATOR_STOP;                                                     \
             return NULL;                                                                    \
         }                                                                                   \
@@ -182,8 +192,6 @@ type * type##Iterator_next(type##Iterator * iter) {                             
             return NULL;                                                                    \
         }                                                                                   \
         iter->stop = ITERATOR_GO;                                                           \
-    } else {                                                                                \
-        return NULL;                                                                        \
     }                                                                                       \
                                                                                             \
     return iter->array + iter->loc;                                                         \
@@ -299,17 +307,41 @@ if (new_obj##_capacity > comprehension_size) {                                  
 }                                                                                                       \
 }                                                                                                       \
 
+// Iterator
+typedef struct Iterator {
+    void * obj; // keeps track of the state of the iterator
+    void * (*next)(void*);
+    enum iterator_status (*stop)(void*);
+} Iterator, IteratorIterator;
+
+void Iterator_init(Iterator * iter, void * obj, void * (*next) (void*), enum iterator_status (*stop)(void*));
+void * Iterator_next(Iterator * iter);
+enum iterator_status Iterator_stop(Iterator * iter);
+void IteratorIterator_init(IteratorIterator * iter_iter, Iterator * iter);
+void * IteratorIterator_next(IteratorIterator * iter_iter);
+enum iterator_status IteratorIterator_stop(IteratorIterator * iter_iter);
+
+#define iterate(piter_inst, iterable_type, ...)\
+iterable_type##Iterator UNIQUE_VAR_NAME(iterable_type);\
+iterable_type##Iterator_init(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);      \
+Iterator_init(piter_inst, (void*)&UNIQUE_VAR_NAME(iterable_type), (void* (*)(void*)) iterable_type##Iterator_next, (enum iterator_status (*)(void*)) iterable_type##Iterator_stop);\
+
 typedef struct Filter {
+    /*
     void * iter_obj; // underlying iterator structure
     void * (*iter_next)(void *); // takes iter_obj as input and outputs an element of the object
     enum iterator_status (*iter_stop)(void*); // takes iter_obj and returns status
+    */
+    Iterator iter;
     bool (*func)(void*);
-} Filter;
+} Filter, FilterIterator;
 
+/*
 typedef struct FilterIterator {
     Filter * filt;
     enum iterator_status stop;
 } FilterIterator;
+*/
 
 void Filter_init(Filter * filt, bool (*func)(void*), void * iter_obj, void * (*iter_next)(void*), enum iterator_status (*iter_stop)(void*));
 void FilterIterator_init(FilterIterator * filt_iter, Filter * filt);
@@ -322,29 +354,168 @@ the three named macro parameters must be unique in a local scope
 iterator object is statically allocated
 pfilter_obj is a pointer to the Filter object.
 */
+static inline bool no_filter(void*place_holder) {
+    return true;
+}
 #define filter(pfilter_obj, function, iterable_type, ...)                                                                                   \
-iterable_type##Iterator filter_##function##iterable_type##_iter;                                                                            \
-iterable_type##Iterator_init(&filter_##function##iterable_type##_iter, __VA_ARGS__);                                                        \
-Filter_init(pfilter_obj, function, &filter_##function##iterable_type##_iter, (void* (*)(void*))iterable_type##Iterator_next, (enum iterator_status (*)(void*))iterable_type##Iterator_stop)    \
+iterable_type##Iterator UNIQUE_VAR_NAME(iterable_type);\
+iterable_type##Iterator_init(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);\
+Filter_init(pfilter_obj, function, &UNIQUE_VAR_NAME(iterable_type), (void* (*)(void*))iterable_type##Iterator_next, (enum iterator_status (*)(void*))iterable_type##Iterator_stop)    \
 
 /* TODO: slice
-typedef struct Slice {
-    void * iter_obj;
-    void * (*iter_next)(void*);
-    enum iterator_status (*iter_stop)(void*);
-    size_t start;
-    size_t end;
-    long long int step;
-} Slice;
+#define declare_array_sequence(type)            \
+type * type##_get(type # seq, size_t index);    \
+declare_array_sizeable(type)                    \
 
-typedef struct SliceIterator {
-    Slice * sl;
-    enum iterator_status stop;
+#define define_array_sequence(type)             \
+type * type##_get(type * seq, size_t index) {   \
+    return seq + index;                         \
+}                                               \
+define_array_sizeable(type)                     \
+
+void Slice_init(Slice * sl, void * obj, void*(*get)(void*, size_t), size_t start, size_t stop, long long int step) {
+    sl->obj = obj;
+    sl->get = get;
+    sl->loc = start;
+    sl->start = start;
+    sl->stop = stop;
+    sl->step = step;
 }
 
-#define slice(pslice_inst, iterable_type, iterable_inst, ...)\
-iterable_type##Iterator pslice_inst##iterable_type##_iter;
-iterable_type##Iterator_init(&pslice_inst##iterable_type##_iter;)
+void SliceIterator_init(SliceIterator * sl_iter, Slice * sl) {
+    sl_iter->sl = sl;
+    if (sl->loc >= sl->stop) {
+        sl_iter->stop = ITERATOR_STOP;
+    } else {}
+        sl_iter->stop = ITERATOR_PAUSE;
+    }
+}
+
+void * SliceIterator_next(SliceIterator * sl_iter) {
+    if (!sl_iter || sl_iter->stop == ITERATOR_STOP) {
+        return NULL;
+    }
+    if (sl_iter->stop == ITERATOR_PAUSE) {
+        sl_iter->stop = ITERATOR_GO;
+    } else {
+        Slice * sl = sl_iter->sl;
+        if (sl->step > 0) {
+            if (sl->stop - sl->loc <= sl->step) {
+                sl_iter->stop = ITERATOR_STOP;
+                return NULL;
+            }
+            sl->loc += sl->step;
+        } else {
+            if (sl->loc - sl->stop <= -sl->step) {
+                sl_iter->stop = ITERATOR_STOP;
+                return NULL;
+            }
+            sl->loc += sl->step;
+        }
+    }
+    return sl->get(sl->obj, sl->loc)
+}
+
+enum iterator_status SliceIterator_stop(SliceIterator * sl_iter) {
+    return sl_iter->stop;
+}
+
+#define SLICE_CORRECT_STEP_SIGN(start, stop, step) (start <= stop ? (step ? REFLECT_TO_POS(step) : 1) : (step ? REFLECT_TO_NEG(step) : -1))
+
+#define SLICE1(pslice_inst, sliceable_type, obj, size, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, 0, stop, 1)
+#define SLICE2(pslice_inst, sliceable_type, obj, size, start, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, start, stop, 1)
+#define SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, start, stop, step) SLICE3(pslice_inst, sliceable_type, obj, size, CYCLE_TO_POS(start, size), CYCLE_TO_POS(stop, size), step)
+#define SLICE3(pslice_inst, sliceable_type, obj, size, start, stop, step)\
+Slice_init(pslice_inst, (void*)obj, ((void*)(*)(void*))sliceable_type##_get, size, start, stop, SLICE_CORRECT_STEP_SIGN(start, stop, step))
+
+#define GET_SLICE_MACRO(_1,_2,_3,SLICE_MACRO,...) SLICE_MACRO
+#define slice(pslice_inst, sliceable_type, obj, size, ...) GET_SLICE_MACRO(__VA_ARGS__, SLICE3_HELPER, SLICE2, SLICE1, UNUSED)(pslice_inst, sliceable_type, obj, __VA_ARGS__)
+*/
+
+/* TODO: reversed
+#define declare_array_reversible(sequence_type)\
+void sequence_type##_reverse(sequence_type * sizseq);
+
+#define define_array_reversible(sequence_type)                  \
+void sequence_type##_reverse(sequence_type * sizseq) {          \
+    if (!sizseq) {                                              \
+        return;                                                 \
+    }                                                           \
+    size_t N = sequence_type##_size(sizseq);                    \
+    if (N == 0) {                                               \
+        return;                                                 \
+    }                                                           \
+    unsigned char * start = (unsigned char*) sizseq;            \
+    unsignec char * stop = (unsigned char*) (sizeseq + N - 1);  \
+                                                                \
+    size_t size = sizeof(sequence_type);                        \
+    sequence_type buffer;                                       \
+                                                                \
+	while (start < stop) {                                      \
+		cl_swap_buffered(start, stop, size, &bufer);            \
+		start += size; // looks portable?!                      \
+		stop -= size; // looks portable?!                       \
+	}                                                           \
+}                                                               \
+
+#define reverse(reversible_type, inst)  \
+reversible_type##_reverse(inst);        \
+*/
+
+/* TODO: enumerate
+
+#define ENUM_TYPE(index_name, type, name) struct enum_##index_name##name
+
+#define define_enum_type(index_name, type, name)\
+ENUM_TYPE(index_name, type, name) {
+    DECLARATION_STMTS(__VA_ARGS__)
+}
+
+typedef struct EnumBase {
+    size_t i;
+    void * val;
+} EnumBase
+
+typedef struct Enumerator {
+    Iterator iter;
+    EnumBase * next;
+} Enumerator, EnumeratorIterator;
+
+void Enumerator_init(Enumerate * en, void * obj, void * (*next) (void*), enum iterator_status (*stop)(void*)) {
+    Iterator_init((Iterator *)en, obj, next, stop);
+    en->next->i = 0;
+    en->next->val = NULL
+}
+
+EnumBase * Enumerator_next(Enumerate * en) {
+    if (!en->next->val) {
+        en->next->i = 0;
+    } else {
+        en->next->i++;
+    }
+    en->next->val = Iterator_next((Iterator *) en);
+    if (en->next->val) {
+        return NULL;
+    }
+    return en->next;
+}
+
+void EnumeratorIterator_init(EnumerateIterator * en_iter, Enumerate * en) {
+    Enumerator_init(en_iter, en->iter.obj, en->iter.next, en->iter.stop); // copy initialization
+}
+
+EnumBase * EnumeratorIterator_next(EnumerateIterator * en_iter) {
+    return Enumerator_next(en_iter);
+}
+
+enum iterator_status EnumeratorIterator_stop(EnumerateIterator * en_iter) {
+    return Iterator_stop((Iterator*)en_iter);
+}
+
+# define enumerate(penum_inst, iterable_type, ...)\
+iterable_type##Iterator UNIQUE_VAR_NAME(iterable_type);\
+iterable_type##Iterator_init(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);      \
+Enumerator_init(penum_inst, (void*)&UNIQUE_VAR_NAME(iterable_type), (void* (*)(void*)) iterable_type##Iterator_next, (enum iterator_status (*)(void*)) iterable_type##Iterator_stop);\
 
 */
 
