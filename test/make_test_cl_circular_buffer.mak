@@ -45,9 +45,9 @@ else
     #endif
 endif
 
-CFLAGS += -o test_cl_dbl_circular_buffer$(EXT)
+CFLAGS += -o test_cl_circular_buffer$(EXT)
 
 all: build
 
 build:
-	$(CC) $(CFLAGS) $(IFLAGS) test_cl_dbl_circular_buffer.c ../src/cl_dbl_circular_buffer.c ../src/cl_utils.c ../src/cl_iterators.c $(LFLAGS) 
+	$(CC) $(CFLAGS) $(IFLAGS) test_cl_circular_buffer.c ../src/cl_circular_buffer.c ../src/cl_utils.c ../src/cl_iterators.c $(LFLAGS) 
