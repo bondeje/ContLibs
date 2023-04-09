@@ -91,9 +91,6 @@ int test_filter(void) {
     return CL_SUCCESS;
 }
 
-define_array_sequence(char)
-define_array_sequence(long)
-
 int test_slice(void) {
     printf("Testing generic Slice object...");
     size_t i, j;
@@ -260,89 +257,85 @@ int test_array_iterator(void) {
     size_t start = 0;
     size_t stop = arr_size;
     long long int step = 1;
-    longIterator * liter = long_slice(arr, arr_size, start, stop, step);
+    Slice liter;
+    slice(&liter, long, arr, arr_size, start, stop, step);
     i = start;
     size_t j = 0;
     size_t num = arr_size;
     {
-    for_each_enumerate(long, val, longIterator, liter) {
+    for_each_enumerate(long, val, Slice, &liter) {
         ASSERT(val.i == j, "\nfailed to increment enumeration correctly in test_array_iterator at enumeration %zu, index %zu. Found: %zu, expected %zu", j, i, val.i, j);
         ASSERT(*val.val == arr[i], "\nfailed to retrieve iterated element in test_array_iterator at enumeration %zu, index %zu. Found: %ld, expected %ld", j, i, *val.val, arr[i]);
         i += step;
         j++;
     }
     }
-    longIterator_del(liter);
     ASSERT(j == num, "\nfailed to iterate until stop condition in test_array_iterator at line %d, Found: %zu, expected %zu", __LINE__, j, num);
 
     /* zero every 3rd element*/
     start = 0;
     stop = arr_size;
     step = 3;
-    liter = long_slice(arr, arr_size, start, stop, step);
+    slice(&liter, long, arr, arr_size, start, stop, step);
     i = start;
     j = 0;
     num = 3;
     {
-    for_each(long, val, longIterator, liter) {
+    for_each(long, val, Slice, &liter) {
         *val = 0;
         ASSERT(arr[i] == 0, "\nfailed to retrieve iterated element in test_array_iterator at enumeration %zu, index %zu. Found: %ld, expected %ld", j, i, arr[i], (long)0);
         i += step;
         j++;
     }
     }
-    longIterator_del(liter);
     ASSERT(j == num, "\nfailed to iterate until stop condition in test_array_iterator at line %d, Found: %zu, expected %zu", __LINE__, j, num);
     
     start = 1;
     stop = arr_size - 1;
     step = 2;
-    liter = long_slice(arr, arr_size, start, stop, step);
+    slice(&liter, long, arr, arr_size, start, stop, step);
     i = start;
     j = 0;
     num = 4;
     {
-    for_each_enumerate(long, val, longIterator, liter) {
+    for_each_enumerate(long, val, Slice, &liter) {
         ASSERT(val.i == j, "\nfailed to increment enumeration correctly in test_array_iterator at enumeration %zu, index %zu. Found: %zu, expected %zu", j, i, val.i, j);
         ASSERT(*val.val == arr[i], "\nfailed to retrieve iterated element in test_array_iterator at enumeration %zu, index %zu. Found: %ld, expected %ld", j, i, *val.val, arr[i]);
         i += step;
         j++;
     }
     }
-    longIterator_del(liter);
     ASSERT(j == num, "\nfailed to iterate until stop condition in test_array_iterator at line %d, Found: %zu, expected %zu", __LINE__, j, num);
 
     start = arr_size-2;
     stop = 0;
     step = -2;
-    liter = long_slice(arr, arr_size, start, stop, step);
+    slice(&liter, long, arr, arr_size, start, stop, step);
     i = start;
     j = 0;
     {
-    for_each_enumerate(long, val, longIterator, liter) {
+    for_each_enumerate(long, val, Slice, &liter) {
         ASSERT(val.i == j, "\nfailed to increment enumeration correctly in test_array_iterator at enumeration %zu, index %zu. Found: %zu, expected %zu", j, i, val.i, j);
         ASSERT(*val.val == arr[i], "\nfailed to retrieve iterated element in test_array_iterator at enumeration %zu, index %zu. Found: %ld, expected %ld", j, i, *val.val, arr[i]);
         i += step;
         j++;
     }
     }
-    longIterator_del(liter);
-
+    
     start = arr_size-1;
     stop = 0;
     step = -2;
-    liter = long_slice(arr, arr_size, start, stop, step);
+    slice(&liter, long, arr, arr_size, start, stop, step);
     i = start;
     j = 0;
     {
-    for_each_enumerate(long, val, longIterator, liter) {
+    for_each_enumerate(long, val, Slice, &liter) {
         ASSERT(val.i == j, "\nfailed to increment enumeration correctly in test_array_iterator at enumeration %zu, index %zu. Found: %zu, expected %zu", j, i, val.i, j);
         ASSERT(*val.val == arr[i], "\nfailed to retrieve iterated element in test_array_iterator at enumeration %zu, index %zu. Found: %ld, expected %ld", j, i, *val.val, arr[i]);
         i += step;
         j++;
     }
     }
-    longIterator_del(liter);
 
     printf("PASS\n");
     return CL_SUCCESS;

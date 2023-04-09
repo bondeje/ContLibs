@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdbool.h>
-#include "cl_slice.h"
+#include "cl_iterators.h"
+//#include "cl_slice.h"
 #include "cl_deque.h"
 
 static size_t Deque_tail(Deque * deq) {
@@ -160,51 +161,6 @@ void Deque_reverse(Deque * deq) {
 	deq->reversed = !deq->reversed;
 }
 
-// iterates until *func retuns something other than CL_SUCCESS
-size_t Deque_for_each(Deque * deq, int (*func)(void *, void *), void * func_input) {
-	size_t i = 0;
-	size_t num = Deque_size(deq);
-	while (i < num && (func(func_input, Deque_get(deq, i++))==CL_SUCCESS)) {} // increment is on the second i since we do not want the increment if i == num
-	return i;
-}
-/*
-void * Deque_pop_front(Deque * deq) {
-	if (Deque_is_empty(deq)) {
-		return NULL;
-	}
-
-	void * val = deq->data[deq->head];
-	deq->data[deq->head] = NULL;
-	deq->size--;
-
-	if (deq->reversed) {
-		if (!deq->head) {
-			deq->head = deq->capacity;
-		}
-		deq->head--;
-	} else {
-		deq->head++;
-		if (deq->head == deq->capacity) {
-			deq->head = 0;
-		}
-	}
-	return val;
-}
-
-void * Deque_pop_back(Deque * deq) {
-	if (Deque_is_empty(deq)) {
-		return NULL;
-	}
-
-	size_t tail = Deque_tail(deq);
-	void * val = deq->data[tail]; 
-	deq->data[tail] = NULL; // pointer arithmetic on void ** appears to be OK, but don't do it on void *
-	deq->size--;
-
-	return val;
-}
-*/
-
 // Deque_resize by default realigns the header to 0
 // shrink to fit would just call this with factor = 0 since it would default to the current size
 int Deque_resize(Deque * deq, float factor) {
@@ -271,12 +227,12 @@ int Deque_resize(Deque * deq, float factor) {
 
 // this creates a shallow copy of the Deque. Elements are shared 
 Deque * Deque_copy_iterator(DequeIterator * deq_iter) {
-	
-	Deque * deq_out = Deque_new(deq_iter->deq->size);
-	for_each(void, el, DequeIterator, deq_iter) {
-		Deque_push_back(deq_out, el);
+	Deque * deq_out = Deque_new(deq_iter->size);
+	if (deq_out) {
+		for_each(void, el, DequeIterator, deq_iter) {
+			Deque_push_back(deq_out, el);
+		}
 	}
-	
 	return deq_out;
 }
 
@@ -302,17 +258,7 @@ void DequeIterator_init(DequeIterator * deq_iter, Deque * deq) {
 	if (!deq_iter) {
 		return;
 	}
-	if (!deq) {
-		deq_iter->sl_iter.stop = ITERATOR_STOP;
-	}
-    deq_iter->deq = deq;
-    if (deq->reversed) {
-        // TODO: this does not work since the start & stop must be positive. Need a way to handle iteration of a reversed container down to 0
-        Slice_init(&deq_iter->sl_iter.sl, deq_iter->deq->size - 1, 0, -1);
-    } else {
-        Slice_init(&deq_iter->sl_iter.sl, 0, deq->size, 1);
-    }
-    SliceIterator_init(&deq_iter->sl_iter, &deq_iter->sl_iter.sl);
+	Slice_init(deq_iter, deq, (void*(*)(void*, size_t)) Deque_get, deq->size, 0, deq->size, 1);
 }
 
 void DequeIterator_del(DequeIterator * deq_iter) {
@@ -320,32 +266,15 @@ void DequeIterator_del(DequeIterator * deq_iter) {
 }
 
 void * DequeIterator_next(DequeIterator * deq_iter) {
-	if (!deq_iter) {
-		return NULL;
-	}
-    size_t index = SliceIterator_next(&(deq_iter->sl_iter));
-    if (deq_iter->sl_iter.stop) {
-        return NULL;
-    }
-	return Deque_get(deq_iter->deq, index);
+	return Slice_next(deq_iter);
 }
 
 enum iterator_status DequeIterator_stop(DequeIterator * deq_iter) {
-    if (!deq_iter) {
-        return ITERATOR_STOP;
-    }
-    return deq_iter->sl_iter.stop;
+	return Slice_stop(deq_iter);
 }
 
 void DequeIteratorIterator_init(DequeIteratorIterator * deq_iter_iter, DequeIterator * deq_iter) {
-	if (!deq_iter_iter) {
-		return;
-	}
-	if (!deq_iter) {
-		deq_iter_iter->sl_iter.stop = ITERATOR_STOP;
-		return;
-	}
-	*deq_iter_iter = *deq_iter;
+	DequeIterator_init(deq_iter_iter, deq_iter->obj);
 }
 
 void * DequeIteratorIterator_next(DequeIteratorIterator * deq_iter) {
@@ -528,18 +457,6 @@ void * Deque_remove(Deque * deq, size_t index) {
 
 	deq->size--;
 	return val;
-}
-
-DequeIterator * Deque_slice(Deque * deq, size_t start, size_t end, long long step) {
-	
-	Slice sl;
-	Slice_init(&sl, start, end, step);
-	SliceIterator sl_iter;
-	SliceIterator_init(&sl_iter, &sl);
-	DequeIterator * deq_iter = DequeIterator_new(deq);
-	deq_iter->sl_iter = sl_iter;
-	
-	return deq_iter;
 }
 
 size_t Deque_size(Deque * deq) {

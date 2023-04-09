@@ -100,6 +100,15 @@ enum iterator_status {
     ITERATOR_PAUSE,
 };
 
+#define declare_array_sequence(type)            \
+type * type##_get(type * seq, size_t index);    \
+
+#define define_array_sequence(type)             \
+type * type##_get(type * seq, size_t index) {   \
+    return seq + index;                         \
+}                                               \
+
+
 /* 
 this macro generates the header declarations for an array of type 'type', e.g. if your container 
 is type * object, declare_array_iterator(type) will make all the appropriate declarations for 
@@ -125,7 +134,7 @@ void type##IteratorIterator_init(type##IteratorIterator *iter_iter, type##Iterat
 type * type##IteratorIterator_next(type##Iterator *iter);                                               \
 enum iterator_status type##IteratorIterator_stop(type##Iterator *iter);                                 \
 size_t type##IteratorIterator_elem_size(type##Iterator *iter);                                          \
-type##Iterator * type##_slice(type * array, size_t num, size_t start, size_t stop, long long int step); \
+declare_array_sequence(type)                                                                            \
 
 declare_array_iterable(double)
 declare_array_iterable(float)
@@ -134,12 +143,6 @@ declare_array_iterable(int)
 declare_array_iterable(char)
 declare_array_iterable(size_t)
 declare_array_iterable(pvoid)
-
-#define define_array_sizeable(type)     \
-static inline size_t type##_size(type * seq) {        \
-    return sizeof(seq)/sizeof(type);    \
-}                                       \
-
 
 /* 
 this macro generates the implementation definitions for an array of type 'type', e.g. if your 
@@ -224,18 +227,7 @@ enum iterator_status type##IteratorIterator_stop(type##Iterator * iter) {       
 size_t type##IteratorIterator_elem_size(type##Iterator * iter) {                            \
     return sizeof(type);                                                                    \
 }                                                                                           \
-type##Iterator * type##_slice(type * array, size_t num, size_t start, size_t end, long long int step) {                    \
-    if (start >= num || (end > num && !(end == SIZE_MAX)) || start == end || !step || (step > 0 && start > end) || (step < 0 && start < end && end != SIZE_MAX)) { \
-        return NULL;                                                                        \
-    }                                                                                       \
-    type##Iterator * iter = type##Iterator_new(array, num);                                 \
-    iter->start = start;                                                                    \
-    iter->loc = start;                                                                      \
-    iter->end = end;                                                                        \
-    iter->step = step;                                                                      \
-    /*printf("\nslice: num %zu, loc %zu, start %zu, stop %zu, %lld step", iter->num, iter->loc, iter->start, iter->end, iter->step);*/\
-    return iter;                                                                            \
-}                                                                                           \
+define_array_sequence(type)                                                                 \
 
 #define for_each(insttype, inst, iterable_type, ...)								        \
 iterable_type##Iterator UNIQUE_VAR_NAME(inst##iterable_type);                                           \
@@ -358,14 +350,6 @@ iterable_type##Iterator UNIQUE_VAR_NAME(iterable_type);\
 iterable_type##Iterator_init(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);\
 Filter_init(pfilter_obj, function, &UNIQUE_VAR_NAME(iterable_type), (void* (*)(void*))iterable_type##Iterator_next, (enum iterator_status (*)(void*))iterable_type##Iterator_stop)    \
 
-//TODO: slice
-#define declare_array_sequence(type)            \
-type * type##_get(type * seq, size_t index);    \
-
-#define define_array_sequence(type)             \
-type * type##_get(type * seq, size_t index) {   \
-    return seq + index;                         \
-}                                               \
 
 
 #define SLICE_CORRECT_STEP_SIGN(start, stop, step) (start <= stop ? (step ? REFLECT_TO_POS(step) : 1) : (step ? REFLECT_TO_NEG(step) : -1))

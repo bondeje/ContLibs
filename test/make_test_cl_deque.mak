@@ -50,4 +50,5 @@ CFLAGS += -o test_cl_deque$(EXT)
 all: build
 
 build:
-	$(CC) $(CFLAGS) $(IFLAGS) test_cl_deque.c ../src/cl_deque.c ../src/cl_utils.c ../src/cl_slice.c $(LFLAGS)
+	$(CC) $(CFLAGS) $(IFLAGS) test_cl_deque.c ../src/cl_deque.c ../src/cl_utils.c ../src/cl_iterators.c $(LFLAGS) 
+    #../src/cl_slice.c

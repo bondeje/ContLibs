@@ -31,7 +31,7 @@ specialization of CircularList) and use their functions
 // private
 // TODO: _DblLinkedList_find: find first node with given value specifying starting point, stopping point where start may be > stop. Must return pointer
 
-#define CL_DLL_FAIL_PTR CL_FAIL_PTR
+#define CL_DLL_FAIL_PTR NULL
 
 //static NodeAttributes * dbllinkednode = NodeAttributes_new(Node_attr_flag(PREV) | Node_attr_flag(NEXT), 3, Node_attr(VALUE), NULL, Node_attr(PREV), NULL, Node_attr(NEXT), NULL);
 //NodeAttributes_init(dbllinkednode, Node_attr_flag(PREV) | Node_attr_flag(NEXT), 3, Node_attr(VALUE), NULL, Node_attr(PREV), NULL, Node_attr(NEXT), NULL);

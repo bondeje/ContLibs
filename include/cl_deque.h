@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <string.h> // memmove
 #include "cl_core.h"
-#include "cl_slice.h"
+//#include "cl_slice.h"
 
 /*
 TODO: once I have containers set up and inheritance, the functions in this 
@@ -43,10 +43,15 @@ typedef struct Deque {
 	bool reversed;
 } Deque;
 
+// TODO: can probably get rid of this or at least get rid of the need for a SliceIterator, and just use Iterator
+/*
 typedef struct DequeIterator {
 	SliceIterator sl_iter;
 	Deque * deq;
 } DequeIterator, DequeIteratorIterator;
+*/
+
+typedef Slice DequeIterator, DequeIteratorIterator;
 
 // Public API
 
@@ -85,7 +90,7 @@ enum deque_status Deque_insert(Deque * deq, size_t ptr_index, void * val);
 void * Deque_pop_front(Deque * deq);
 void * Deque_pop_back(Deque * deq);
 void * Deque_remove(Deque * deq, size_t index);
-DequeIterator * Deque_slice(Deque *, size_t, size_t, long long);
+//DequeIterator * Deque_slice(Deque *, size_t, size_t, long long);
 
 // TODO: provide backward version implementation of _Deque_index_map_fwd
 
