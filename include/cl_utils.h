@@ -121,6 +121,9 @@ typedef void* pvoid;
 
 // failure/success defaults. Note CL_FAIL will be unspecified failures. For more detailed failures, use an appropriate ENUM
 enum cl_status {
+	CL_INDEX_OUT_OF_BOUNDS = -20,
+	CL_REALLOC_FAILURE = -3,
+	CL_MALLOC_FAILURE = -2,
 	CL_FAILURE = -1,
 	CL_SUCCESS
 };
