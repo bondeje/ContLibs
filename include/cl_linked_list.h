@@ -34,11 +34,12 @@ enum cl_status LinkedList_push_back(LinkedList * ll, void * val);
 void * LinkedList_remove(LinkedList * ll, size_t loc);
 void * LinkedList_pop_front(LinkedList * ll);
 void * LinkedList_pop_back(LinkedList * ll);
+
+// generally should only use this if the elements are unique in the value or you are sure you only want the first occurrence
+// for all other use cases, the filter functionality is better.
 void * LinkedList_find(LinkedList * ll, void * value, int (*comp)(void*, void*));
 
 //Iterators
-LinkedListIterator * LinkedListIterator_new(LinkedList * ll);
-void LinkedListIterator_del(LinkedListIterator * ll_iter);
 void LinkedListIterator_init(LinkedListIterator * ll_iter, LinkedList * ll);
 void * LinkedListIterator_next(LinkedListIterator * ll_iter);
 enum iterator_status LinkedListIterator_stop(LinkedListIterator * ll_iter);

@@ -10,6 +10,18 @@
 //static Node DEFAULT_NODE[DEFAULT_SIZE] = {'\0'}; // cannot do this because NodeAttributes_del(NA) expects NA->defaults to be NULL or heap-allocated
 #define DEFAULT_NODE Node_new(NA, 2, Node_attr(VALUE), NULL, Node_attr(NEXT), NULL)
 
+static Node * LinkedList_get_node(LinkedList * ll, size_t index) {
+    if (!ll || index >= ll->size) {
+        return NULL;
+    }
+    size_t loc = 0;
+    Node * node = ll->head;
+    while (loc < index) {
+        node = Node_get(ll->NA, node, NEXT);
+        loc++;
+    }
+    return node;
+}
 
 LinkedList * LinkedList_new(unsigned int flags, int narg_pairs, ...) {
     LinkedList * ll = (LinkedList *) CL_MALLOC(sizeof(LinkedList));
@@ -112,19 +124,6 @@ void * LinkedList_get(LinkedList * ll, size_t index) {
     return Node_get(ll->NA, LinkedList_get_node(ll, index), VALUE);
 }
 
-static Node * LinkedList_get_node(LinkedList * ll, size_t index) {
-    if (!ll || index >= ll->size) {
-        return NULL;
-    }
-    size_t loc = 0;
-    Node * node = ll->head;
-    while (loc < index) {
-        node = Node_get(ll->NA, node, NEXT);
-        loc++;
-    }
-    return node;
-}
-
 enum cl_status LinkedList_insert(LinkedList * ll, size_t loc, void * val) {
     if (!ll) {
         return CL_VALUE_ERROR;
@@ -162,10 +161,10 @@ enum cl_status LinkedList_push_back(LinkedList * ll, void * val) {
 
 void * LinkedList_remove(LinkedList * ll, size_t loc) {
     if (!ll) {
-        return CL_VALUE_ERROR;
+        return NULL;
     }
     if (loc >= ll->size) {
-        return CL_INDEX_OUT_OF_BOUNDS;
+        return NULL;
     }
     
     Node * to_del = NULL;
@@ -197,7 +196,7 @@ void * LinkedList_find(LinkedList * ll, void * value, int (*comp)(void*, void*))
     }
     Node * node = ll->head;
     void * result = Node_get(ll->NA, node, VALUE);
-    Node * node = Node_get(ll->NA, node, NEXT);
+    node = Node_get(ll->NA, node, NEXT);
     int crv = comp(result, value);
     while (crv && node) {
         void * result = Node_get(ll->NA, node, VALUE);
@@ -219,10 +218,10 @@ void LinkedListIterator_init(LinkedListIterator * ll_iter, LinkedList * ll) {
     }
     ll_iter->ll = ll;
     ll_iter->node = ll->head;
-    if (ll_iter->node) {
-        ll_iter->stop = ITERATOR_PAUSE;
-    } else {
+    if (!ll_iter->node || !ll_iter->ll->size) {
         ll_iter->stop = ITERATOR_STOP;
+    } else {
+        ll_iter->stop = ITERATOR_PAUSE;
     }
 }
 void * LinkedListIterator_next(LinkedListIterator * ll_iter) {
