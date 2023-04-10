@@ -53,14 +53,12 @@ void CircularBuffer_del(CircularBuffer * cb);
 void CircularBuffer_reverse(CircularBuffer * cb);
 size_t CircularBuffer_size(CircularBuffer * cb);
 bool CircularBuffer_is_empty(CircularBuffer * cb);
-size_t CircularBuffer_for_each(CircularBuffer * cb, int (*func)(void *, void *), void * func_input);
 enum cl_status CircularBuffer_resize(CircularBuffer * cb, float factor);
 CircularBuffer * CircularBuffer_copy_iterator(CircularBufferIterator *);
 CircularBuffer * CircularBuffer_copy(CircularBuffer * cb);
 
 // CircularBufferIterator
 CircularBufferIterator * CircularBufferIterator_new(CircularBuffer * cb);
-void CircularBufferIterator_init(CircularBufferIterator * cb_iter, CircularBuffer * cb);
 void CircularBufferIterator_del(CircularBufferIterator * cb_iter);
 void CircularBufferIterator_init(CircularBufferIterator * cb_iter, CircularBuffer * cb);
 void * CircularBufferIterator_next(CircularBufferIterator * cb_iter);

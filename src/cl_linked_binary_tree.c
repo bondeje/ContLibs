@@ -1,6 +1,6 @@
 #include <stddef.h>
 #include "cl_core.h"
-#include "cl_dbl_circular_buffer.h"
+#include "cl_circular_buffer.h"
 #include "cl_node.h"
 #include "cl_tree_utils.h"
 #include "cl_linked_binary_tree.h"
@@ -105,8 +105,8 @@ size_t LinkedBinaryTree_subtree_size(LinkedBinaryTree * lbt, Node * node) {
 }
 
 // TODO:
-int LinkedBinaryTree_path_to(DblCircularBuffer * path, LinkedBinaryTree * lbt, Node * node) {
-	// try to do this without heap allocation of the DblCircularBuffer
+int LinkedBinaryTree_path_to(CircularBuffer * path, LinkedBinaryTree * lbt, Node * node) {
+	// try to do this without heap allocation of the CircularBuffer
 }
 
 int LinkedBinaryTree_rotate(LinkedBinaryTree * lbt, Node * node, int dir) {
@@ -420,25 +420,25 @@ size_t lBT_preorder(lBTNode * root, int (*func)(void *, void *), void * func_inp
 		return 0;
 	}
 	// for a Binary Tree of height h, should not have to allocate more space than 2*height + 1 (largest height both children + 1 extra) since this is DFS
-	// the DblCircularBuffer only needs to satisfy the conditions for a Stack
-	// Stack based on underlying DblCircularBuffer would not actually save any memory
-	DblCircularBuffer * deq = DblCircularBuffer_create(root->subTreeSize/2);
+	// the CircularBuffer only needs to satisfy the conditions for a Stack
+	// Stack based on underlying CircularBuffer would not actually save any memory
+	CircularBuffer * deq = CircularBuffer_create(root->subTreeSize/2);
 	size_t count = 0;
-	DblCircularBuffer_push_back(deq, (void *) root);
+	CircularBuffer_push_back(deq, (void *) root);
 	int cont = 1;
-	while (cont && !DblCircularBuffer_is_empty(deq)) {
-		lBTNode * node = (lBTNode *) DblCircularBuffer_pop_back(deq);
+	while (cont && !CircularBuffer_is_empty(deq)) {
+		lBTNode * node = (lBTNode *) CircularBuffer_pop_back(deq);
 		count++;
 		cont = !func(func_input, (void *)node);
 		if (node->right) {
-			DblCircularBuffer_push_back(deq, (void *) node->right);
+			CircularBuffer_push_back(deq, (void *) node->right);
 		}
 		if (node->left) {
-			DblCircularBuffer_push_back(deq, (void *) node->left);
+			CircularBuffer_push_back(deq, (void *) node->left);
 		}
 	}
 	
-	DblCircularBuffer_destroy(deq, 0); // destroy the DblCircularBuffer but not its contents
+	CircularBuffer_destroy(deq, 0); // destroy the CircularBuffer but not its contents
 	
 	return count;
 }
@@ -452,43 +452,43 @@ size_t lBT_postorder(lBTNode * root, int (*func)(void *, void *), void * func_in
 	}
 	
 	// algorithm outline...
-	// DblCircularBuffer of a pair (lBTNode *node, int val)
+	// CircularBuffer of a pair (lBTNode *node, int val)
 	// node is not null and value is 0 or 1:
 	// if value is 1, node's children already added so visit node
 	// if value is 0, push it back on Stack with a 1 and add right child then left child with 0s
-	DblCircularBuffer * nodes = DblCircularBuffer_create(root->subTreeSize/2);
+	CircularBuffer * nodes = CircularBuffer_create(root->subTreeSize/2);
 	
 	BTN_visited * pair = (BTN_visited *) malloc(sizeof(BTN_visited));
 	*pair = (BTN_visited) {root, 0};
 	BTN_visited * node;
 	
-	DblCircularBuffer_push_back(nodes, (void *) pair);
+	CircularBuffer_push_back(nodes, (void *) pair);
 	
 	size_t count = 0;
 	int cont = 1;
-	while (cont && !DblCircularBuffer_is_empty(nodes)) {
-		node = (BTN_visited *) DblCircularBuffer_pop_back(nodes);
+	while (cont && !CircularBuffer_is_empty(nodes)) {
+		node = (BTN_visited *) CircularBuffer_pop_back(nodes);
 		if (node->val) {
 			cont = !func(func_input, (void *)node->node);
 			count++;
 			free(node);
 		} else {
 			node->val = 1;
-			DblCircularBuffer_push_back(nodes, (void *) node);
+			CircularBuffer_push_back(nodes, (void *) node);
 			if (node->node->right) {
 				pair = (BTN_visited *) malloc(sizeof(BTN_visited));
 				*pair = (BTN_visited) {node->node->right, 0};
-				DblCircularBuffer_push_back(nodes, (void *) pair);
+				CircularBuffer_push_back(nodes, (void *) pair);
 			}
 			if (node->node->left) {
 				pair = (BTN_visited *) malloc(sizeof(BTN_visited));
 				*pair = (BTN_visited) {node->node->left, 0};
-				DblCircularBuffer_push_back(nodes, (void *) pair);
+				CircularBuffer_push_back(nodes, (void *) pair);
 			}
 		}
 	}
 	
-	DblCircularBuffer_destroy(nodes, 1); // destroy all nodes and free their contents
+	CircularBuffer_destroy(nodes, 1); // destroy all nodes and free their contents
 	
 	return count;
 }
@@ -499,22 +499,22 @@ size_t lBT_inorder(lBTNode * root, int (*func)(void *, void *), void * func_inpu
 	}
 	
 	// algorithm outine...
-	// DblCircularBuffer of a pair (lBTNode *node, int val)
+	// CircularBuffer of a pair (lBTNode *node, int val)
 	// node is not null and value is 0 or 1:
 	// if value is 1, node's children already added so visit node
 	// if value is 0, push it back on Stack with a 1 and add right child then left child with 0s
-	DblCircularBuffer * nodes = DblCircularBuffer_create(root->subTreeSize/2);
+	CircularBuffer * nodes = CircularBuffer_create(root->subTreeSize/2);
 	
 	BTN_visited * pair = (BTN_visited *) malloc(sizeof(BTN_visited));
 	*pair = (BTN_visited) {root, 0};
 	BTN_visited * node;
 	
-	DblCircularBuffer_push_back(nodes, (void *) pair);
+	CircularBuffer_push_back(nodes, (void *) pair);
 	
 	size_t count = 0;
 	int cont = 1;
-	while (cont && !DblCircularBuffer_is_empty(nodes)) {
-		node = (BTN_visited *) DblCircularBuffer_pop_back(nodes);
+	while (cont && !CircularBuffer_is_empty(nodes)) {
+		node = (BTN_visited *) CircularBuffer_pop_back(nodes);
 		if (node->val) {
 			cont = !func(func_input, (void *)node->node);
 			count++;
@@ -524,42 +524,42 @@ size_t lBT_inorder(lBTNode * root, int (*func)(void *, void *), void * func_inpu
 			if (node->node->right) {
 				pair = (BTN_visited *) malloc(sizeof(BTN_visited));
 				*pair = (BTN_visited) {node->node->right, 0};
-				DblCircularBuffer_push_back(nodes, (void *) pair);
+				CircularBuffer_push_back(nodes, (void *) pair);
 			}
-			DblCircularBuffer_push_back(nodes, (void *) node);
+			CircularBuffer_push_back(nodes, (void *) node);
 			if (node->node->left) {
 				pair = (BTN_visited *) malloc(sizeof(BTN_visited));
 				*pair = (BTN_visited) {node->node->left, 0};
-				DblCircularBuffer_push_back(nodes, (void *) pair);
+				CircularBuffer_push_back(nodes, (void *) pair);
 			}
 		}
 	}
 	
-	DblCircularBuffer_destroy(nodes, 1); // destroy all BTN_visited nodes and free their contents
+	CircularBuffer_destroy(nodes, 1); // destroy all BTN_visited nodes and free their contents
 	
 	return count;
 }
 
 size_t lBT_level_order(lBTNode * root, int (*func)(void *, void *), void * func_input) {
-	DblCircularBuffer * nodes = DblCircularBuffer_create(root->subTreeSize/2);
+	CircularBuffer * nodes = CircularBuffer_create(root->subTreeSize/2);
 	
-	DblCircularBuffer_push_back(nodes, (void *) root);
+	CircularBuffer_push_back(nodes, (void *) root);
 	
 	size_t count = 0;
 	int cont = 1;
-	while (cont && !DblCircularBuffer_is_empty(nodes)) {
-		lBTNode * node = (lBTNode *) DblCircularBuffer_pop_front(nodes);
+	while (cont && !CircularBuffer_is_empty(nodes)) {
+		lBTNode * node = (lBTNode *) CircularBuffer_pop_front(nodes);
 		if (node->left) {
-			DblCircularBuffer_push_back(nodes, (void *) node->left);
+			CircularBuffer_push_back(nodes, (void *) node->left);
 		}
 		if (node->right) {
-			DblCircularBuffer_push_back(nodes, (void *) node->right);
+			CircularBuffer_push_back(nodes, (void *) node->right);
 		}
 		count++;
 		cont = !func(func_input, (void *)node);
 	}
 	
-	DblCircularBuffer_destroy(nodes, 0); // destroy the DblCircularBuffer but not its contents
+	CircularBuffer_destroy(nodes, 0); // destroy the CircularBuffer but not its contents
 	return count;
 }
 

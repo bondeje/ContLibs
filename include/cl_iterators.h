@@ -363,6 +363,7 @@ Slice_init(pslice_inst, (void*)obj, (void* (*)(void*, size_t))sliceable_type##_g
 #define GET_SLICE_MACRO(_1,_2,_3,SLICE_MACRO,...) SLICE_MACRO
 #define slice(pslice_inst, sliceable_type, obj, size, ...) GET_SLICE_MACRO(__VA_ARGS__, SLICE3_HELPER, SLICE2, SLICE1, UNUSED)(pslice_inst, sliceable_type, obj, size, __VA_ARGS__)
 
+// TODO: make SliceIterator an actual iterator
 typedef struct Slice {
     void * obj;
     void * (*get)(void *, size_t);

@@ -1,9 +1,11 @@
 //#include "cl_node.h"
+#include <stddef.h>
+#include <stdbool.h>
 #include "cl_utils.h"
+#include "cl_linked_list.h"
 
-#ifndef CL_DBLLINKEDLIST_H
-#define CL_DBLLINKEDLIST_H
-
+#ifndef CL_DBL_LINKED_LIST_H
+#define CL_DBL_LINKED_LIST_H
 /*
 TODO: once I have containers set up and inheritance, the functions in this 
 module will be inherit from container. Deque will then be constructed with one 
@@ -31,20 +33,14 @@ specialization of CircularList) and use their functions
 // private
 // TODO: _DblLinkedList_find: find first node with given value specifying starting point, stopping point where start may be > stop. Must return pointer
 
-#define CL_DLL_FAIL_PTR NULL
-
 //static NodeAttributes * dbllinkednode = NodeAttributes_new(Node_attr_flag(PREV) | Node_attr_flag(NEXT), 3, Node_attr(VALUE), NULL, Node_attr(PREV), NULL, Node_attr(NEXT), NULL);
 //NodeAttributes_init(dbllinkednode, Node_attr_flag(PREV) | Node_attr_flag(NEXT), 3, Node_attr(VALUE), NULL, Node_attr(PREV), NULL, Node_attr(NEXT), NULL);
 
-enum DLL_error_code {
-	CL_DLL_SUCCESS = 0,
-	CL_DLL_FAILURE = -1,
-	CL_DLL_MALLOC_FAILURE = -2,
-	CL_DLL_INDEX_OUT_OF_BOUNDS = -10,
-};
+typedef struct DblLinkedList {
+    LinkedList ll;
+} DblLinkedList;
 
 /* PUBLIC API */
-typedef struct DblLinkedList DblLinkedList;
 DblLinkedList * DblLinkedList_new(NodeAttributes * NA);
 void DblLinkedList_init(DblLinkedList * dll);
 void DblLinkedList_del(DblLinkedList * dll);
