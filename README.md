@@ -22,6 +22,43 @@ General notes and limitations - mostly about memory management
 
 [//]: # (This is a comment, note the parentheses are required)
 
+<details open><summary> Time Performance </summary> <blockquote>
+Expected performance of common actions (not yet tested)
+
+#### Abbreviations
+- NYI - Not yet implemented
+- A - amortized
+- TRA/TRO - may trigger re-alignment/re-ordering. worst case quoted.
+- N - number of elements in container
+- N' - number of elements in secondary input container
+- M - container capacity
+- P - context dependent parameter of container.
+
+#### General Notes
+- Reversing is handled with flags where possible. In this case, performance is O(1) if no TRA functions are called or TRA conditions are met
+- All iterators are lazily evaluated and so their functions should be O(N) except where the underlying `*_get` or `*_next` method are not O(1). For example, slicing an ordinary linked list is a terrible ideas as `LinkedList_get` is O(N) so `Slice_next` or `SliceIterator_next` will be O(N) on each call and iterating through the slice of a `LinkedList` is O(N^2)
+
+#### Sequences
+
+| category | structure | short description | init | extend | size/<br/>is_empty | reverse | contains/<br/>find | get<br/>(random) | peek_front | peek_back | insert<br/>(random) | push_front | push_back | remove(random) | pop_front | pop_back |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| contiguous buffer |`array (ref, NYI)`| standard static array | O(M) | O(N'+N) | O(1) (user) | O(N) | O(N) | O(1) | O(1) | O(1) | O(N) | O(N) | O(N) | O(N) | O(N) | O(N) |
+| contiguous buffer |`CircularBuffer`| circular/ring array/buffer | O(M) | O(N')<br/>O(max(M,N'+N)) TRA, NYI | O(1) | O(1) | O(N) | O(1) | O(1) | O(1) | O(N) TRA | O(1) A/TRA | O(1) A/TRA | O(N) | O(1) | O(1) |
+| linked structure* |`LinkedList`| simple linked list | O(1) | O(1) | O(1) | O(N) | O(N) | O(N) | O(1) | O(N) | O(N) | O(1) | O(N) | O(N) | O(1) | O(N) |
+| linked structure* |`DblLinkedList`| doubly linked list for <br/> forward & backward traversal | O(1) | O(1)<br/>O(N'+N) TRO | O(1) | O(1) | O(N) | O(N) | O(1) | O(1) | O(N) | O(1) | O(1) | O(N) | O(1) | O(1) |
+| linked* contiguous buffers |`HybridDblLinkedList`(P)| doubly linked list of buffers: "unrolled linked list". <br/> P is buffer size | O(1) | O(1)<br/>O(N'+N) TRO, NYI | O(1) | O(1) | O(N) | O(N/P) | O(1) | O(1) | O(N/P) A (needs confirmation) | O(1) | O(1) | O(N/P) | O(1) | O(1) |
+
+*Do not `slice` linked strctures as the performance will be terrible. Instead `enumerate` them and skip the indices that you do not want.
+
+#### Sets and Mappings
+
+| category | structure | short description | init | add | merge | size/<br/>is_empty | contains/<br/>find | get<br/> |
+|---|---|---|---|---|---|---|---|---|
+| linked set |`LinkedHashSet`| iterable set of unique elements | O(M) | O(1) A/TRA | O(max(M, N+N')) TRA/NYI | O(1) | O(1) | N/A |
+| linked mapping |`LinkedHashTable`| iterable set of key/value mappings | O(M) | O(1) A/TRA |  O(max(M, N+N')) TRA/NYI | O(1) | O(1) | O(1) A |
+
+</blockquote></details>
+
 <details><summary> cl_array_binary_tree.h </summary><blockquote>
 
 #### Description

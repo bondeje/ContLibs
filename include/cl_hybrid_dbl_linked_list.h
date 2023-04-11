@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include "cl_iterators.h"
 #include "cl_dbl_linked_list.h"
 
 #ifndef CL_HYBRID_LINKED_LIST_H
