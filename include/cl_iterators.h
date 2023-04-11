@@ -354,6 +354,7 @@ Filter_init(pfilter_obj, function, &UNIQUE_VAR_NAME(iterable_type), (void* (*)(v
 
 #define SLICE_CORRECT_STEP_SIGN(start, stop, step) (start <= stop ? (step ? REFLECT_TO_POS(step) : 1) : (step ? REFLECT_TO_NEG(step) : -1))
 
+/*
 #define SLICE1(pslice_inst, sliceable_type, obj, size, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, 0, stop, 1)
 #define SLICE2(pslice_inst, sliceable_type, obj, size, start, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, start, stop, 1)
 #define SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, start, stop, step) SLICE3(pslice_inst, sliceable_type, obj, size, CYCLE_TO_POS(start, size), CYCLE_TO_POS(stop, size), step)
@@ -362,6 +363,18 @@ Slice_init(pslice_inst, (void*)obj, (void* (*)(void*, size_t))sliceable_type##_g
 
 #define GET_SLICE_MACRO(_1,_2,_3,SLICE_MACRO,...) SLICE_MACRO
 #define slice(pslice_inst, sliceable_type, obj, size, ...) GET_SLICE_MACRO(__VA_ARGS__, SLICE3_HELPER, SLICE2, SLICE1, UNUSED)(pslice_inst, sliceable_type, obj, size, __VA_ARGS__)
+*/
+
+#define SLICE0(pslice_inst, sliceable_type, obj, size) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, 0, size, 1);
+#define SLICE1(pslice_inst, sliceable_type, obj, size, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, 0, stop, 1)
+#define SLICE2(pslice_inst, sliceable_type, obj, size, start, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, start, stop, 1)
+#define SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, start, stop, step) SLICE3(pslice_inst, sliceable_type, obj, size, CYCLE_TO_POS(start, size), CYCLE_TO_POS(stop, size), step)
+#define SLICE3(pslice_inst, sliceable_type, obj, size, start, stop, step)\
+Slice_init(pslice_inst, (void*)obj, (void* (*)(void*, size_t))sliceable_type##_get, size, start, stop, SLICE_CORRECT_STEP_SIGN(start, stop, step))
+
+#define GET_SLICE_MACRO(_1,_2,_3,_4,SLICE_MACRO,...) SLICE_MACRO
+#define slice(pslice_inst, sliceable_type, obj, ...) GET_SLICE_MACRO(__VA_ARGS__, SLICE3_HELPER, SLICE2, SLICE1, SLICE0, UNUSED)(pslice_inst, sliceable_type, obj, __VA_ARGS__)
+
 
 // TODO: make SliceIterator an actual iterator
 typedef struct Slice {

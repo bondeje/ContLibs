@@ -136,6 +136,8 @@ void cl_swap_buffered(void *, void *, size_t, void *);
 enum cl_status cl_reverse_unbuffered(void *, void *, size_t);
 enum cl_status cl_reverse_buffered(void *, void *, size_t, void *);
 
+void cl_parray_left_justify(void ** arr, size_t capacity);
+
 /************************* HANDLING SIGNS *************************/
 
 /******************************** COMPARISON *********************************/

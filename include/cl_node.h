@@ -11,32 +11,32 @@
 
 #define NODE_NULL          -1
 // default attributes
-#define NODE_VALUE			0
+#define NODE_VALUE			    0
 #define NODE_VALUE_TYPE			void*
-#define NODE_KEY           1
+#define NODE_KEY                1
 #define NODE_KEY_TYPE           const void*
-#define NODE_LEFT			2
+#define NODE_LEFT			    2
 #define NODE_LEFT_TYPE			Node*
-#define NODE_RIGHT			3
+#define NODE_RIGHT			    3
 #define NODE_RIGHT_TYPE			Node*
-#define NODE_PREV          4
+#define NODE_PREV               4
 #define NODE_PREV_TYPE          Node*
-#define NODE_NEXT          5
+#define NODE_NEXT               5
 #define NODE_NEXT_TYPE          Node*
-#define NODE_PARENT		6
+#define NODE_PARENT		        6
 #define NODE_PARENT_TYPE		Node*
-#define NODE_SIZE 			7
+#define NODE_SIZE 			    7
 #define NODE_SIZE_TYPE			size_t
-#define NODE_BALANCE		8
-#define NODE_BALANCE_TYPE		signed char
-#define NODE_HEIGHT		9
+#define NODE_HEIGHT		        8
 #define NODE_HEIGHT_TYPE		size_t
-#define NODE_COLOR         10
-#define NODE_COLOR_TYPE         signed char
-#define NODE_CHILD			11
+#define NODE_CHILD			    9
 #define NODE_CHILD_TYPE			Node*
-#define NODE_NCHILD        12
+#define NODE_NCHILD             10
 #define NODE_NCHILD_TYPE        unsigned int
+#define NODE_BALANCE	        11
+#define NODE_BALANCE_TYPE		signed char
+#define NODE_COLOR              12
+#define NODE_COLOR_TYPE         signed char
 
 //#define Node_attr(attr_name) NODE_##attr_name##_ATTR
 #define CONCAT2(A, B) A##B

@@ -68,6 +68,39 @@ enum cl_status cl_reverse_buffered(void * start, void * end, size_t size, void *
 	return CL_SUCCESS;
 }
 
+// need to thoroughly test
+void cl_parray_left_justify(void ** arr, size_t capacity) {
+	size_t i = 0;
+    size_t gap = 0;
+    size_t move_start = 0;
+    bool gap_found = false;
+    while (i < capacity) {
+        if (arr[i] == NULL) {
+            if (gap_found && move_start > gap) {
+                // move memory
+                memmove(arr + gap, arr + move_start, sizeof(void*) * (i - move_start));
+				// set original block to NULL
+				for (size_t j = i - (move_start - gap); j < i; j++) {
+					arr[j] = NULL;
+				}
+                gap_found = false;
+            } else {
+                gap = i;
+                gap_found = true;
+            }
+        } else if (gap_found && move_start <= gap) {
+            move_start = i;
+        }
+        i++;
+    }
+    if (gap_found && move_start > gap) {
+        memmove(arr + gap, arr + move_start, sizeof(void*) * (i - move_start));
+		for (size_t j = i - (move_start - gap); j < i; j++) {
+			arr[j] = NULL;
+		}
+    }
+}
+
 /******************************** COMPARISON *********************************/
 
 /********************************* NUMERICS **********************************/

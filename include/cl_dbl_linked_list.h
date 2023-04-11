@@ -19,7 +19,7 @@ typedef struct DblLinkedListIterator {
 
 DblLinkedList * DblLinkedList_new(unsigned int flags, int narg_pairs, ...);
 void DblLinkedList_init(DblLinkedList * dll, NodeAttributes * NA);
-extern void (*DblLinkedList_del)(DblLinkedList * dll);
+extern const void (*DblLinkedList_del)(DblLinkedList * dll);
 void DblLinkedList_reverse(DblLinkedList * dll);
 
 extern size_t (*DblLinkedList_size)(DblLinkedList *);
@@ -36,6 +36,7 @@ void * DblLinkedList_get(DblLinkedList * dll, size_t index);
 enum cl_status DblLinkedList_insert(DblLinkedList * dll, size_t loc, void * val);
 enum cl_status DblLinkedList_push_front(DblLinkedList * dll, void * val);
 enum cl_status DblLinkedList_push_back(DblLinkedList * dll, void * val);
+void * DblLinkedList_remove_node(DblLinkedList * dll, Node * node);
 void * DblLinkedList_remove(DblLinkedList * dll, size_t loc);
 void * DblLinkedList_pop_front(DblLinkedList * dll);
 void * DblLinkedList_pop_back(DblLinkedList * dll);

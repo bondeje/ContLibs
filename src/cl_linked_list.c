@@ -1,8 +1,6 @@
 #include "cl_iterators.h"
 #include "cl_linked_list.h"
 
-#define NEXT RIGHT
-
 #define REQUIRED_NODE_FLAGS (Node_flag(VALUE) | Node_flag(NEXT))
 
 // manually construct static allocations of defaults. Reduce heap load
@@ -60,6 +58,9 @@ void LinkedList_init(LinkedList * ll, NodeAttributes * NA) {
 }
 
 void LinkedList_del(LinkedList * ll) {
+    while (ll->size) {
+        LinkedList_remove(ll, 0);
+    }
     NodeAttributes_del(ll->NA);
     CL_FREE(ll);
 }
@@ -78,6 +79,9 @@ void LinkedList_reverse(LinkedList * ll) {
 }
 
 size_t LinkedList_size(LinkedList * ll) {
+    if (!ll) {
+        return 0;
+    }
     return ll->size;
 }
 

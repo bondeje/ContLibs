@@ -1,9 +1,6 @@
 #include "cl_iterators.h"
 #include "cl_dbl_linked_list.h"
 
-#define PREV LEFT
-#define NEXT RIGHT
-
 #define REQUIRED_NODE_FLAGS (Node_flag(VALUE) | Node_flag(NEXT) | Node_flag(PREV))
 
 // manually construct static allocations of defaults. Reduce heap load
@@ -40,12 +37,15 @@ DblLinkedList * DblLinkedList_new(unsigned int flags, int narg_pairs, ...) {
 }
 
 void DblLinkedList_init(DblLinkedList * dll, NodeAttributes * NA) {
+    if (!dll || !NA) {
+        return;
+    }
     LinkedList_init((LinkedList*)dll, NA);
     dll->tail = NULL;
     dll->reversed = false;
 }
 
-void (*DblLinkedList_del)(DblLinkedList * dll) = (void (*)(DblLinkedList * dll))LinkedList_del;
+const void (*DblLinkedList_del)(DblLinkedList * dll) = (void (*)(DblLinkedList *))LinkedList_del;
 
 void DblLinkedList_reverse(DblLinkedList * dll) {
     dll->reversed = !dll->reversed;
@@ -203,6 +203,30 @@ enum cl_status DblLinkedList_push_back(DblLinkedList * dll, void * val) {
     return DblLinkedList_insert(dll, DblLinkedList_size(dll), val);
 }
 
+// node MUST BE IN DLL!
+void * DblLinkedList_remove_node(DblLinkedList * dll, Node * node) {
+    if (!dll || !node) {
+        return NULL;
+    }
+    NodeAttributes * NA = dll->ll.NA;
+    if (node == dll->ll.head) {
+        dll->ll.head = Node_get(NA, node, NEXT);
+        Node_set(NA, dll->ll.head, PREV, NULL);
+    } else if (node == dll->tail) {
+        dll->tail = Node_get(NA, node, PREV);
+        Node_set(NA, dll->tail, NEXT, NULL;)
+    } else {
+        Node * prev = Node_get(dll->ll.NA, node, PREV);
+        Node * next = Node_get(dll->ll.NA, node, NEXT);
+        Node_set(dll->ll.NA, next, PREV, prev);
+        Node_set(dll->ll.NA, prev, NEXT, next);
+    }
+    void * val = Node_get(NA, node, VALUE);
+    Node_del(node);
+    dll->ll.size--;
+    return val;
+}
+
 void * DblLinkedList_remove(DblLinkedList * dll, size_t loc) {
     if (!dll) {
         return NULL;
@@ -211,28 +235,10 @@ void * DblLinkedList_remove(DblLinkedList * dll, size_t loc) {
     if (loc >= size) {
         return NULL;
     }
-    
-    Node * to_del = NULL;
-    if ((!loc && dll->reversed) || (loc == size-1 && !dll->reversed)) { // pop_back
-        to_del = dll->tail;
-        dll->tail = Node_get(dll->ll.NA, dll->tail, PREV);
-        Node_set(dll->ll.NA, dll->tail, NEXT, NULL);
-    } else if ((!loc && !dll->reversed) || (loc == size-1 && dll->reversed)) { // pop_front
-        to_del = dll->ll.head;
-        dll->ll.head = Node_get(dll->ll.NA, dll->ll.head, NEXT);
-        Node_set(dll->ll.NA, dll->ll.head, PREV, NULL);
-    } else {
-        Node * prev = Node_get(dll->ll.NA, to_del, PREV);
-        Node * next = Node_get(dll->ll.NA, to_del, NEXT);
-        to_del = DblLinkedList_get_node(dll, loc);
-        Node_set(dll->ll.NA, next, PREV, prev);
-        Node_set(dll->ll.NA, prev, NEXT, next);
-    }
-    void * el = Node_get(dll->ll.NA, to_del, VALUE);
-    Node_del(to_del);
-    dll->ll.size--;
-    return el;
+
+    return DblLinkedList_remove_node(dll, DblLinkedList_get_node(dll, loc));
 }
+
 void * DblLinkedList_pop_front(DblLinkedList * dll) {
     return DblLinkedList_remove(dll, 0);
 }
