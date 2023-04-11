@@ -1,5 +1,24 @@
 # ContLibs
-Libraries of some simple containers and tools related to their use
+Libraries of some simple containers and tools related to their use.
+
+Goal is to provide a multi-platform implementation of many common (and some uncommon) containers with a uniform API and short learning curve so that users can easily/speedily apply and switch between different container "backends". Targeted platforms are Windows (I am a Windows guy, but slowly transitioning to Linux), Linux, and OS X. A lot of the functionality outside of linked data structures allows for purely static allocations so that in principle it can be modified to work in a freestanding environment where especially `malloc` is not available, but I won't be explicitly testing that.
+
+This library depends heavily on the `cl_iterators.h` header and the concept of iterables/iterators and is really built around it. I really developed my programming skills with Python where this is ever-present, but I am absolutely in love with C. I don't care much for C++, but the C++ standard library is indispensable for doing anything really safe, meaningful, and as fast (in the development sense) as Python while still being able to work close to the metal. I wanted to provide the convenience and ease of Python or the C++ standard library with its generic programming but within the compiled, efficient environment of C. Since I am from a Python background, there will be a lot of resemblance to the built-in iterator methods as well as the itertools and collections.abc modules.
+
+I am also a data person that loves to explore data structures and how to build/manipulate them. With this in mind there will be a lot of minor or major variations on common data structures and a lot of find tuning. Unfortunately, this means there there are a lot to choose from with very long and specific names. The non-existence of C overloading (without using a mess of macros) will help force me to make uniform APIs. This is kind of the point as I wanted to be able to interchange and fine tune them to fit my needs. I will do my best to keep up documentation so that it is clear which one to choose or is recommended based on needs. Eventually, I would like to build abstract data types that can easily switch between different backend containers as seemlessly as providing an identifying flag.
+
+General notes and limitations - mostly about memory management
+
+- This library is not type safe. A lot of the functionality is provided in macros so that the user can provide type information, but it's all implemented as syntax sugar/casts so type punning is trivial and easily accidental. C puts a lot of demand on the programmer to know what they are doing and this library is no exception &mdash; there is no free lunch here.
+- There might be a lot of repeated code. One of my design intents is to make the library itself modular by enforcing, as much as possible, a very small dependency stack. I have used some of the features of C that resemble "inheritance" to reuse code, but I don't want a library where you must compile and link everything for just one small feature as I find in a lot of other OOP libraries. In most cases, there are a few small utility headers that are needed for general functionality, but then you should only need one or two more to get any of the data structures working...the rest can be discarded.
+- All data consumed or emitted by the container/iterator functions are assumed to be pointers to data. It is certainly possible to enter raw values, but not really recommended.
+- All iterators can be statically allocated and this is the preferred method. 
+    - The itertools and iterator macros, e.g. `for_each`, `iterate`, `filter`, `enumerate`, `slice`, etc. will all only allocate additional variables on the stack &mdash; do not pass the initialized variables out of scope! Equivalent macros that dynamically allocate the appropriate structures are planned.
+- Convenience macros are provided to turn any array into an iterable type by generating the requisite functions. Some are pre-defined, especially those based on `void` pointers because they are used by other modules.
+- All containers are designed to be dynamic in size.
+    - As far as is possible, containers and their contents are compatible with static allocations, though care must be taken to ensure static allocations are large enough so that they do not hit resizing algorithms
+    
+    - In general internal nodes in linked data structures cannot be statically allocated. An alternate allocation scheme is on the wish list.
 
 [//]: # (This is a comment, note the parentheses are required)
 
