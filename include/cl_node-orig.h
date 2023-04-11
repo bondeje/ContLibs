@@ -91,29 +91,32 @@ struct NodeAttributes {
     int attr_map[NODE_N_ATTR];              // mapping of attribute indices to byte_map indices
     size_t size;                            // number of bytes in Node
     size_t n_attrs;                         // number of attributes
-    Node * defaults;                        // a default node with attributes to be copied to new nodes
     unsigned int flags;                     // flags originally used to create attributes
-    bool default_alloc;
+    Node * defaults;                        // a default node with attributes to be copied to new nodes
 };
 
 extern size_t attr_bytes[NODE_N_ATTR];
 
-extern Node * DEFAULT_NODES[NODE_N_ATTR];
-
 // TODO: add an enumeration for colors
-Node * Node_new(NodeAttributes * NA, int narg_pairs, ...);
-Node * vNode_new(NodeAttributes * NA, int narg_pairs, va_list args);
-void vNode_init(NodeAttributes * NA, Node * node, int narg_pairs, va_list args);
-void Node_del(Node * node);
 
-void NodeAttributes_set_default_node(NodeAttributes * NA, Node * defaults);
-Node * NodeAttributes_get_default_node(unsigned int flags);
-NodeAttributes * NodeAttributes_new(unsigned int flags, int narg_pairs, ...);
+
+void vNode_init(NodeAttributes * NA, Node * node, int narg_pairs, va_list args);
+
+Node * vNode_new(NodeAttributes * NA, int narg_pairs, va_list args);
+
+void vNodeAttributes_init(NodeAttributes * NA, unsigned int flags, int narg_pairs, va_list args);
+
+void NodeAttributes_init(NodeAttributes * NA, unsigned int flags, int narg_pairs, ...);
+
 NodeAttributes * vNodeAttributes_new(unsigned int flag, int narg_pairs, va_list args);
-void NodeAttributes_init(NodeAttributes * NA, unsigned int flags);
+
+NodeAttributes * NodeAttributes_new(unsigned int flags, int narg_pairs, ...);
+
 void NodeAttributes_del(NodeAttributes * NA);
 
+Node * Node_new(NodeAttributes * NA, int narg_pairs, ...);
 
+void Node_del(Node * node);
 
 /********************************** PRIVATE **********************************/
 

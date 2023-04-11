@@ -47,6 +47,11 @@ LinkedBinaryTree * vLinkedBinaryTree_new(int (*compare) (Node_type(KEY), Node_ty
         return NULL;
     }
 
+	if (!narg_pairs) { // if default fails, not necessarily a problem
+        NodeAttributes_set_default_node(NA, DEFAULT_NODE);
+        NA->default_alloc = true;
+    }
+
     LinkedBinaryTree_init(lbt, compare, NA);
 
     return lbt;

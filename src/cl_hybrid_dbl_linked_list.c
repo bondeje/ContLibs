@@ -132,7 +132,7 @@ enum cl_status HybridDblLinkedList_insert(HybridDblLinkedList * hdll, size_t ind
             hdll->dll.tail = hdll->dll.ll.head;
         }
 
-        // special case of push_back
+        // special case of push_back where HybridDblLinkedList_get_loc returns an invalid location
         if (index == node_size) {
             node_loc.index = node_size;
             if (hdll->dll.reversed) {

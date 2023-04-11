@@ -1,23 +1,6 @@
 #include <string.h>
 #include "cl_node.h"
 
-Node * DEFAULT_NODES[NODE_N_ATTR] = {(Node*)"\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",
-                                     (Node*)"\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"};
-
 size_t attr_bytes[NODE_N_ATTR] = {sizeof(NODE_VALUE_TYPE),
                                   sizeof(NODE_KEY_TYPE),
                                   sizeof(NODE_LEFT_TYPE),
@@ -97,26 +80,7 @@ void Node_del(Node * node) {
     CL_FREE(node);
 }
 
-void NodeAttributes_set_default_node(NodeAttributes * NA, Node * defaults) {
-    if (NA->default_alloc) {
-        Node_del(NA->defaults);
-        NA->default_alloc = false;
-    }
-    NA->defaults = defaults;
-}
-
-Node * NodeAttributes_get_default_node(unsigned int flags) {
-    size_t count = 0;
-    while (flags) {
-        if (flags & 1) {
-            count++;
-        }
-        flags >>= 1;
-    }
-    return DEFAULT_NODES[count];
-}
-
-void NodeAttributes_init(NodeAttributes * NA, unsigned int flags) {
+void vNodeAttributes_init(NodeAttributes * NA, unsigned int flags, int narg_pairs, va_list args) {
     //flags |= Node_attr_flag(VALUE); // node must have a value
     NA->flags = flags;
     int ct = 0;
@@ -149,8 +113,20 @@ void NodeAttributes_init(NodeAttributes * NA, unsigned int flags) {
 
     NA->n_attrs = ct;
     NA->size = bytes;
-    NA->default_alloc = false;
-    NA->defaults = NodeAttributes_get_default_node(flags);
+    if (narg_pairs > 0) {
+        //printf("allocating new default node\n");
+        NA->defaults = vNode_new(NA, narg_pairs, args);
+    } else {
+        //printf("setting defaults to NULL\n");
+        NA->defaults = NULL;
+    }
+}
+
+void NodeAttributes_init(NodeAttributes * NA, unsigned int flags, int narg_pairs, ...) {
+    va_list args;
+    va_start(args, narg_pairs);
+    vNodeAttributes_init(NA, flags, narg_pairs, args);
+    va_end(args);
 }
 
 NodeAttributes * vNodeAttributes_new(unsigned int flags, int narg_pairs, va_list args) {
@@ -158,17 +134,7 @@ NodeAttributes * vNodeAttributes_new(unsigned int flags, int narg_pairs, va_list
     if (!NA) {
         return NULL;
     }
-    
-    NodeAttributes_init(NA, flags);
-    if (narg_pairs) {
-        Node * defaults = vNode_new(NA, narg_pairs, args);
-        if (!defaults) {
-            CL_FREE(NA);
-            return NULL;
-        }
-        NodeAttributes_set_default_node(NA, defaults);
-        NA->default_alloc = true;
-    }   
+    vNodeAttributes_init(NA, flags, narg_pairs, args);
 
     return NA;
 }
@@ -183,9 +149,9 @@ NodeAttributes * NodeAttributes_new(unsigned int flags, int narg_pairs, ...) {
 }
 
 void NodeAttributes_del(NodeAttributes * NA) {
-    if (NA->default_alloc) {
+    if (NA->defaults) {
         Node_del(NA->defaults);
+        NA->defaults = NULL;
     }
-    NA->defaults = NULL;
     CL_FREE(NA);
 }

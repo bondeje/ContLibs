@@ -27,8 +27,9 @@ DblLinkedList * DblLinkedList_new(unsigned int flags, int narg_pairs, ...) {
         return NULL;
     }
 
-    if (!NA->defaults) { // if default fails, not necessarily a problem
-        NA->defaults = DEFAULT_NODE;
+    if (!narg_pairs) { // if default fails, not necessarily a problem
+        NodeAttributes_set_default_node(NA, DEFAULT_NODE);
+        NA->default_alloc = true;
     }
 
     DblLinkedList_init(dll, NA);    
