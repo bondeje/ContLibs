@@ -10,25 +10,24 @@
 // TODO: eventually use macros to set the hash sizes so that user can replace hash function with a different output size
 // TODO: incorporate a randomized hash seed for strings, "salting": see http://ocert.org/advisories/ocert-2011-003.html, referenced from https://docs.python.org/3.8/reference/datamodel.html#object.__hash__
 
-#define PREV_INORDER LEFT
-#define NEXT_INORDER RIGHT
-#define NEXT_INHASH PARENT
+#define NEXT_INORDER NEXT
+#define NEXT_INHASH RIGHT
 
-#define REQUIRED_NODE_FLAGS (Node_flag(KEY) | Node_flag(LEFT) | Node_flag(RIGHT) | Node_flag(PARENT))
+#define REQUIRED_NODE_FLAGS (Node_flag(KEY) | Node_flag(NEXT_INORDER) | Node_flag(NEXT_INHASH))
 
 // manually construct static allocations of defaults. Reduce heap load
-#define DEFAULT_SIZE (sizeof(Node_type(KEY)) + sizeof(Node_type(RIGHT)) + sizeof(Node_type(LEFT)) + sizeof(Node_type(PARENT)))
+#define DEFAULT_SIZE (sizeof(Node_type(KEY)) + sizeof(Node_type(NEXT_INORDER)) + sizeof(Node_type(NEXT_INHASH)))
 //static Node DEFAULT_NODE[DEFAULT_SIZE] = {'\0'}; // cannot do this because NodeAttributes_del(NA) expects NA->defaults to be NULL or heap-allocated
-#define DEFAULT_NODE Node_new(NA, 4, Node_attr(KEY), NULL, Node_attr(RIGHT), NULL, Node_attr(LEFT), NULL, Node_attr(PARENT), NULL)
+#define DEFAULT_NODE Node_new(NA, 3, Node_attr(KEY), NULL, Node_attr(NEXT_INORDER), NULL, Node_attr(NEXT_INHASH), NULL)
 
 // set hash to NULL makes keys interpreted
 struct LinkedHashSet {
-    Node ** bins;
-    Node * head_inorder;
-    Node * tail_inorder;
     NodeAttributes * NA;
-    size_t capacity; // allocation of hash_set, should be prime
+    Node * head;
+    Node * tail;
+    Node ** bins;
     size_t size; // number of elements in hash_set
+    size_t capacity; // allocation of hash_set, should be prime
     float max_load_factor;
     int (*comp) (const void *, const void *);
     hash_t (*hash) (const void *, size_t);
@@ -77,7 +76,7 @@ int LinkedHashSet_resize(LinkedHashSet * hash_set, size_t capacity) {
     }
 
     // re-hash the keys back into the bins, proceeding in order
-    node = hash_set->head_inorder;
+    node = hash_set->head;
     while (node) {
         hash_t bin = hash_set->hash(Node_get(hash_set->NA, node, KEY), hash_set->capacity);
         last_node = hash_set->bins[bin];
@@ -140,8 +139,8 @@ LinkedHashSet * LinkedHashSet_new(hash_t (*hash) (const void *, size_t), int (*c
 
 void LinkedHashSet_init(LinkedHashSet * hash_set, hash_t (*hash) (const void *, size_t), int (*comp) (const void *, const void *), size_t capacity, float max_load_factor, NodeAttributes * NA) {
     hash_set->NA = NA;
-    hash_set->head_inorder = NULL;
-    hash_set->tail_inorder = NULL;
+    hash_set->head = NULL;
+    hash_set->tail = NULL;
     hash_set->capacity = capacity;
     hash_set->size = 0;
     hash_set->max_load_factor = max_load_factor;
@@ -153,13 +152,12 @@ void LinkedHashSet_init(LinkedHashSet * hash_set, hash_t (*hash) (const void *, 
     }
 }
 void LinkedHashSet_del(LinkedHashSet * hash_set) {
-    while (hash_set->tail_inorder) {
-        Node * node = hash_set->tail_inorder;
-        hash_set->tail_inorder = Node_get(hash_set->NA, node, PREV_INORDER);
-        if (hash_set->tail_inorder) {
-            Node_set(hash_set->NA, hash_set->tail_inorder, NEXT_INORDER, NULL);
-        }
-        Node_del(node);
+    Node * next = hash_set->head, * prev = NULL;
+    while (next) {
+        prev = next;
+        next = Node_get(hash_set->NA, prev, NEXT_INORDER);
+        Node_del(prev);
+        prev = NULL;
         hash_set->size--;
     }
     NodeAttributes_del(hash_set->NA);
@@ -186,19 +184,16 @@ int LinkedHashSet_add(LinkedHashSet * hash_set, void * key) {
 
     // create new node and assign it to bins and linked list
     hash_t bin = hash_set->hash(key, hash_set->capacity);
-    node = Node_new(hash_set->NA, 0);
+    node = Node_new(hash_set->NA, 2, Node_attr(KEY), key, Node_attr(NEXT_INHASH), hash_set->bins[bin]);
     if (!node) {
-        return CL_FAILURE;
+        return CL_MALLOC_FAILURE;
     }
-    Node_set(hash_set->NA, node, KEY, key);
     if (!hash_set->size) {
-        hash_set->head_inorder = node;
-        hash_set->tail_inorder = node;
+        hash_set->head = node;
+        hash_set->tail = node;
     } else {
-        Node_set(hash_set->NA, node, NEXT_INHASH, hash_set->bins[bin]);
-        Node_set(hash_set->NA, node, PREV_INORDER, hash_set->tail_inorder);
-        Node_set(hash_set->NA, hash_set->tail_inorder, NEXT_INORDER, node);
-        hash_set->tail_inorder = node;
+        Node_set(hash_set->NA, hash_set->tail, NEXT_INORDER, node);
+        hash_set->tail = node;
     }
     hash_set->bins[bin] = node;
 
@@ -218,7 +213,7 @@ bool LinkedHashSet_contains(LinkedHashSet * hash_set, void * key) {
 // remove and return the node identified by the key in hash_set. Returns NULL if key is not found
 static Node * LinkedHashSet_pop_(LinkedHashSet * hash_set, void * key) {
     //printf("\nin LinkedHashSet_pop_");
-    Node * last_node = NULL, * node, * next_node = NULL;
+    Node * last_node = NULL, * node, * next_node = NULL, * to_del = NULL;
     hash_t bin = hash_set->hash(key, hash_set->capacity);
     node = hash_set->bins[bin];
     while (node && hash_set->comp(Node_get(hash_set->NA, node, KEY), key)) {
@@ -230,43 +225,37 @@ static Node * LinkedHashSet_pop_(LinkedHashSet * hash_set, void * key) {
         return NULL; // failure to remove that which is not present
     }
 
-    //printf("\nafter finding node\n\tlast_node: %p\n\tnode: %p", (void*)last_node, (void*)node);
+    next_node = Node_get(hash_set->NA, node, NEXT_INHASH);
 
-    // node is now the node to be removed
-    // last_node is the node preceding the node to be removed in the bin
+    // remove from linked list in bin
+    // TODO: when I make an unordered hash_table/set, need to make a function to pop from linked list in bin and replace the following code with it
     if (last_node) {
         //printf("\n\tlast_node->next_inhash: %p", (void*)last_node->next_inhash);
-        Node_set(hash_set->NA, last_node, NEXT_INHASH, Node_get(hash_set->NA, node, NEXT_INHASH));
+        Node_set(hash_set->NA, last_node, NEXT_INHASH, next_node);
     } else { // node to be removed is stored in the bin
-        hash_set->bins[bin] = Node_get(hash_set->NA, node, NEXT_INHASH);
+        hash_set->bins[bin] = next_node;
     }
-    //printf("\n\tnode->next_inhash: %p", (void*)node->next_inhash);
+    Node_set(hash_set->NA, node, NEXT_INHASH, NULL);
 
-    // node is now removed from hash_set->bins, need to remove from linked list
-    last_node = Node_get(hash_set->NA, node, PREV_INORDER);
-    Node_set(hash_set->NA, node, PREV_INORDER, NULL);
+    // remove from linked list for ordering
+    // TODO: so long as NEXT_INORDER is an alias for NEXT, we can actually replace this
+    // with initialization of a LinkedList and pop the node for code re-use
+    // this requires a function in the LinkedList module: LinkedList_pop_node(LinkedList * ll, Node * to_pop)
+    to_del = hash_set->head;
+    last_node = NULL;
+    while (to_del && to_del != node) { 
+        last_node = to_del;
+        to_del = Node_get(hash_set->NA, to_del, NEXT_INORDER);
+    }
     next_node = Node_get(hash_set->NA, node, NEXT_INORDER);
-    Node_set(hash_set->NA, node, NEXT_INORDER, NULL);
-    //printf("\nafter removing node from linked list\n\tlast_node: %p\n\tnext_node: %p", (void*)last_node, (void*)next_node);
-    //printf("\n\tnode->prev_inorder: %p\n\tnode->next_inorder: %p", (void*)node->prev_inorder, (void*)node->next_inorder);
     if (last_node) {
         Node_set(hash_set->NA, last_node, NEXT_INORDER, next_node);
+    } else {
+        hash_set->head = next_node;
     }
-    if (next_node) {
-        Node_set(hash_set->NA, next_node, PREV_INORDER, last_node);
+    if (!next_node) {
+        hash_set->tail = last_node;
     }
-
-    //printf("\n\thash_set->head_inorder: %p\n\thash_set->tail_inorder: %p", (void*)hash_set->head_inorder, (void*)hash_set->tail_inorder);
-
-    // reset ends of linked list if necessary
-
-    if (hash_set->head_inorder == node) {
-        hash_set->head_inorder = next_node;
-    }
-    if (hash_set->tail_inorder == node) {
-        hash_set->tail_inorder = last_node;
-    }
-
     hash_set->size--;
 
     // TODO: check load factor and resize if necessary
@@ -296,7 +285,7 @@ LinkedHashSetIterator * LinkedHashSetIterator_new(LinkedHashSet * hash_set) {
 }
 void LinkedHashSetIterator_init(LinkedHashSetIterator * key_iter, LinkedHashSet * hash_set) {
     key_iter->next_key = NULL;
-    key_iter->node = hash_set->head_inorder;
+    key_iter->node = hash_set->head;
     key_iter->NA = hash_set->NA;
     key_iter->stop = ITERATOR_GO;
 }

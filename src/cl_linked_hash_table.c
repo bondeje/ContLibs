@@ -4,28 +4,29 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdarg.h>
-#include "cl_node.h"
+//#include "cl_node.h"
+#include "cl_iterators.h"
 #include "cl_linked_hash_table.h"
 
 // TODO: eventually use macros to set the hash sizes so that user can replace hash function with a different output size
 // TODO: incorporate a randomized hash seed for strings, "salting": see http://ocert.org/advisories/ocert-2011-003.html, referenced from https://docs.python.org/3.8/reference/datamodel.html#object.__hash__
 
-#define PREV_INORDER LEFT
-#define NEXT_INORDER RIGHT
-#define NEXT_INHASH PARENT
+// in order to "inherit" linked list for ordering, NEXT_INORDER must be an alias for NEXT while NEXT_INHASH cannot
+#define NEXT_INORDER NEXT
+#define NEXT_INHASH RIGHT
 
-#define REQUIRED_NODE_FLAGS (Node_flag(KEY) | Node_flag(VALUE) | Node_flag(PARENT) | Node_flag(LEFT) | Node_flag(RIGHT))
+#define REQUIRED_NODE_FLAGS (Node_flag(KEY) | Node_flag(VALUE) | Node_flag(NEXT_INHASH) | Node_flag(NEXT_INORDER))// | Node_flag(LEFT))
 // TODO: replace with a default NodeAttributes, DefaultNode at file scope
-#define DEFAULT_NODE Node_new(NA, 5, Node_attr(VALUE), NULL, Node_attr(KEY), NULL, Node_attr(PREV_INORDER), NULL, Node_attr(NEXT_INORDER), NULL, Node_attr(NEXT_INHASH), NULL)
+#define DEFAULT_NODE Node_new(NA, 4, Node_attr(VALUE), NULL, Node_attr(KEY), NULL, Node_attr(NEXT_INORDER), NULL, Node_attr(NEXT_INHASH), NULL)//, Node_attr(PREV_INORDER), NULL
 
 // set hash to NULL makes keys interpreted
 struct LinkedHashTable {
-    Node ** bins;
-    Node * head_inorder;
-    Node * tail_inorder;
     NodeAttributes * NA;
-    size_t capacity; // allocation of hash_table, should be prime
+    Node * head;
+    Node * tail;
+    Node ** bins; // the bins for the table themselves cannot be a LinkedList because the linkages are RIGHT and not NEXT
     size_t size; // number of elements in hash_table
+    size_t capacity; // allocation of hash_table, should be prime
     float max_load_factor;
     int (*comp) (const void *, const void *);
     hash_t (*hash) (const void *, size_t);
@@ -95,7 +96,7 @@ int LinkedHashTable_resize(LinkedHashTable * hash_table, size_t capacity) {
     }
 
     // re-hash the keys back into the bins, proceeding in order
-    node = hash_table->head_inorder;
+    node = hash_table->head;
     while (node) {
         hash_t bin = hash_table->hash(Node_get(hash_table->NA, node, KEY), hash_table->capacity);
         last_node = hash_table->bins[bin];
@@ -159,8 +160,8 @@ LinkedHashTable * LinkedHashTable_new(hash_t (*hash) (const void *, size_t), int
 
 void LinkedHashTable_init(LinkedHashTable * hash_table, hash_t (*hash) (const void *, size_t), int (*comp) (const void *, const void *), size_t capacity, float max_load_factor, NodeAttributes * NA) {
     hash_table->NA = NA;
-    hash_table->head_inorder = NULL;
-    hash_table->tail_inorder = NULL;
+    hash_table->head = NULL;
+    //hash_table->tail_inorder = NULL;
     hash_table->capacity = capacity;
     hash_table->size = 0;
     hash_table->max_load_factor = max_load_factor;
@@ -172,19 +173,19 @@ void LinkedHashTable_init(LinkedHashTable * hash_table, hash_t (*hash) (const vo
     }
 }
 void LinkedHashTable_del(LinkedHashTable * hash_table) {
-    while (hash_table->tail_inorder) {
-        Node * node = hash_table->tail_inorder;
-        hash_table->tail_inorder = Node_get(hash_table->NA, node, PREV_INORDER);
-        if (hash_table->tail_inorder) {
-            Node_set(hash_table->NA, hash_table->tail_inorder, NEXT_INORDER, NULL);
-        }
-        Node_del(node);
+    Node * next = hash_table->head, * prev = NULL;
+    while (next) {
+        prev = next;
+        next = Node_get(hash_table->NA, prev, NEXT_INORDER);
+        Node_del(prev);
+        prev = NULL;
         hash_table->size--;
     }
     NodeAttributes_del(hash_table->NA);
     hash_table->NA = NULL;
     CL_FREE(hash_table->bins);
     hash_table->bins = NULL;
+    hash_table->capacity = 0;
     CL_FREE(hash_table);
 }
 
@@ -206,21 +207,18 @@ int LinkedHashTable_set(LinkedHashTable * hash_table, void * key, void * value) 
 
     // create new node and assign it to bins and linked list
     hash_t bin = hash_table->hash(key, hash_table->capacity);
-    node = Node_new(hash_table->NA, 0);
+    // BUG: this next line should be sufficient rather than default init and set later, but there appears to be a bug in Node_new
+    node = Node_new(hash_table->NA, 3, Node_attr(KEY), key, Node_attr(VALUE), value, Node_attr(NEXT_INHASH), hash_table->bins[bin]);
     
     if (!node) {
-        return CL_FAILURE;
+        return CL_MALLOC_FAILURE;
     }
-    Node_set(hash_table->NA, node, KEY, key);
-    Node_set(hash_table->NA, node, VALUE, value);
     if (!hash_table->size) {
-        hash_table->head_inorder = node;
-        hash_table->tail_inorder = node;
+        hash_table->head = node;
+        hash_table->tail = node;
     } else {
-        Node_set(hash_table->NA, node, NEXT_INHASH, hash_table->bins[bin]);
-        Node_set(hash_table->NA, node, PREV_INORDER, hash_table->tail_inorder);
-        Node_set(hash_table->NA, hash_table->tail_inorder, NEXT_INORDER, node);
-        hash_table->tail_inorder = node;
+        Node_set(hash_table->NA, hash_table->tail, NEXT_INORDER, node);
+        hash_table->tail = node;
     }
     hash_table->bins[bin] = node;
 
@@ -248,7 +246,7 @@ bool LinkedHashTable_contains(LinkedHashTable * hash_table, void * key) {
 // remove and return the node identified by the key in hash_table. Returns NULL if key is not found
 static Node * LinkedHashTable_pop_(LinkedHashTable * hash_table, void * key) {
     //printf("\nin LinkedHashTable_pop_");
-    Node * last_node = NULL, * node, * next_node = NULL;
+    Node * last_node = NULL, * node, * next_node = NULL, * to_del = NULL;
     hash_t bin = hash_table->hash(key, hash_table->capacity);
     node = hash_table->bins[bin];
     while (node && hash_table->comp(Node_get(hash_table->NA, node, KEY), key)) {
@@ -260,47 +258,38 @@ static Node * LinkedHashTable_pop_(LinkedHashTable * hash_table, void * key) {
         return NULL; // failure to remove that which is not present
     }
 
-    //printf("\nafter finding node\n\tlast_node: %p\n\tnode: %p", (void*)last_node, (void*)node);
+    next_node = Node_get(hash_table->NA, node, NEXT_INHASH);
 
-    // node is now the node to be removed
-    // last_node is the node preceding the node to be removed in the bin
+    // remove from linked list in bin
+    // TODO: when I make an unordered hash_table/set, need to make a function to pop from linked list in bin and replace the following code with it
     if (last_node) {
-        //printf("\n\tlast_node->next_inhash: %p", (void*)last_node->next_inhash);
-        Node_set(hash_table->NA, last_node, NEXT_INHASH, Node_get(hash_table->NA, node, NEXT_INHASH));
-    } else { // node to be removed is stored in the bin
-        hash_table->bins[bin] = Node_get(hash_table->NA, node, NEXT_INHASH);
+        Node_set(hash_table->NA, last_node, NEXT_INHASH, next_node);
+    } else {
+        hash_table->bins[bin] = next_node;
     }
-    //printf("\n\tnode->next_inhash: %p", (void*)node->next_inhash);
+    Node_set(hash_table->NA, node, NEXT_INHASH, NULL);
 
-    // node is now removed from hash_table->bins, need to remove from linked list
-    last_node = Node_get(hash_table->NA, node, PREV_INORDER);
-    Node_set(hash_table->NA, node, PREV_INORDER, NULL);
+    // remove from linked list for ordering
+    // so long as NEXT_INORDER is an alias for NEXT, we can actually replace this
+    // with initialization of a LinkedList and pop the node for code re-use
+    // this requires a function in the LinkedList module: LinkedList_pop_node(LinkedList * ll, Node * to_pop)
+    to_del = hash_table->head;
+    last_node = NULL;
+    while (to_del && to_del != node) { 
+        last_node = to_del;
+        to_del = Node_get(hash_table->NA, to_del, NEXT_INORDER);
+    }
     next_node = Node_get(hash_table->NA, node, NEXT_INORDER);
-    Node_set(hash_table->NA, node, NEXT_INORDER, NULL);
-    //printf("\nafter removing node from linked list\n\tlast_node: %p\n\tnext_node: %p", (void*)last_node, (void*)next_node);
-    //printf("\n\tnode->prev_inorder: %p\n\tnode->next_inorder: %p", (void*)node->prev_inorder, (void*)node->next_inorder);
     if (last_node) {
         Node_set(hash_table->NA, last_node, NEXT_INORDER, next_node);
+    } else {
+        hash_table->head = next_node;
     }
-    if (next_node) {
-        Node_set(hash_table->NA, next_node, PREV_INORDER, last_node);
+    if (!next_node) {
+        hash_table->tail = last_node;
     }
-
-    //printf("\n\thash_table->head_inorder: %p\n\thash_table->tail_inorder: %p", (void*)hash_table->head_inorder, (void*)hash_table->tail_inorder);
-
-    // reset ends of linked list if necessary
-
-    if (hash_table->head_inorder == node) {
-        hash_table->head_inorder = next_node;
-    }
-    if (hash_table->tail_inorder == node) {
-        hash_table->tail_inorder = last_node;
-    }
-
     hash_table->size--;
-
     // TODO: check load factor and resize if necessary
-
     return node;
 }
 
@@ -370,20 +359,20 @@ LinkedHashTableItemIterator * LinkedHashTableItemIterator_new(LinkedHashTable * 
 }
 void LinkedHashTableKeyIterator_init(LinkedHashTableKeyIterator * key_iter, LinkedHashTable * hash_table) {
     key_iter->next_key = NULL;
-    key_iter->node = hash_table->head_inorder;
+    key_iter->node = hash_table->head;
     key_iter->NA = hash_table->NA;
     key_iter->stop = ITERATOR_GO;
 }
 void LinkedHashTableValueIterator_init(LinkedHashTableValueIterator * value_iter, LinkedHashTable * hash_table) {
     value_iter->next_value = NULL;
-    value_iter->node = hash_table->head_inorder;
+    value_iter->node = hash_table->head;
     value_iter->NA = hash_table->NA;
     value_iter->stop = ITERATOR_GO;
 }
 void LinkedHashTableItemIterator_init(LinkedHashTableItemIterator * item_iter, LinkedHashTable * hash_table) {
     item_iter->next_item->key = NULL;
     item_iter->next_item->value = NULL;
-    item_iter->node = hash_table->head_inorder;
+    item_iter->node = hash_table->head;
     item_iter->NA = hash_table->NA;
     item_iter->stop = ITERATOR_GO;
 }

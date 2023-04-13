@@ -66,7 +66,7 @@ void vNode_init(NodeAttributes * NA, Node * node, int narg_pairs, va_list args) 
                 } else {
                     size = NA->size - NA->byte_map[NA->attr_map[i]];
                 }
-                memcpy(node, NA->defaults, size); // copy contents from defaults to node
+                memcpy(node + NA->byte_map[NA->attr_map[i]], NA->defaults + NA->byte_map[NA->attr_map[i]], size); // copy contents from defaults to node
             }
             flag <<= 1;
         }
@@ -160,6 +160,7 @@ NodeAttributes * vNodeAttributes_new(unsigned int flags, int narg_pairs, va_list
     }
     
     NodeAttributes_init(NA, flags);
+
     if (narg_pairs) {
         Node * defaults = vNode_new(NA, narg_pairs, args);
         if (!defaults) {
