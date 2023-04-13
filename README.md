@@ -3,9 +3,9 @@ Libraries of some simple containers and tools related to their use.
 
 Goal is to provide a multi-platform implementation of many common (and some uncommon) containers with a uniform API and short learning curve so that users can easily/speedily apply and switch between different container "backends". Targeted platforms are Windows (I am a Windows guy, but slowly transitioning to Linux), Linux, and OS X. A lot of the functionality outside of linked data structures allows for purely static allocations so that in principle it can be modified to work in a freestanding environment where especially `malloc` is not available, but I won't be explicitly testing that.
 
-This library depends heavily on the `cl_iterators.h` header and the concept of iterables/iterators and is really built around it. I really developed my programming skills with Python where this is ever-present, but I am absolutely in love with C. I don't care much for C++, but the C++ standard library is indispensable for doing anything really safe, meaningful, and as fast (in the development sense) as Python while still being able to work close to the metal. I wanted to provide the convenience and ease of Python or the C++ standard library with its generic programming but within the compiled, efficient environment of C. Since I am from a Python background, there will be a lot of resemblance to the built-in iterator methods as well as the itertools and collections.abc modules.
+This library depends heavily on the `cl_iterators.h` header and the concept of iterables/iterators and is really built around it. I wanted to provide the convenience and ease of Python or the C++ standard library with its generic programming but within the compiled, efficient environment of C. Since I am from a Python background, there will be a lot of resemblance to the built-in iterator methods as well as the itertools and collections.abc modules.
 
-I am also a data person that loves to explore data structures and how to build/manipulate them. With this in mind there will be a lot of minor or major variations on common data structures and a lot of find tuning. Unfortunately, this means there there are a lot to choose from with very long and specific names. The non-existence of C overloading (without using a mess of macros) will help force me to make uniform APIs. This is kind of the point as I wanted to be able to interchange and fine tune them to fit my needs. I will do my best to keep up documentation so that it is clear which one to choose or is recommended based on needs. Eventually, I would like to build abstract data types that can easily switch between different backend containers as seemlessly as providing an identifying flag.
+There will be a lot of variations on the same data structures. Unfortunately, this means there there are a lot to choose from with very long and specific names. The non-existence of C overloading (without using a mess of macros) will help force me to make uniform APIs. This is kind of the point as I wanted to be able to interchange and fine tune them to fit my needs. I will do my best to keep up documentation so that it is clear which one to choose or is recommended based on needs. Eventually, I would like to build abstract data types that can easily switch between different backend containers as seemlessly as providing an identifying flag.
 
 General notes and limitations - mostly about memory management
 
@@ -22,7 +22,7 @@ General notes and limitations - mostly about memory management
 
 [//]: # (This is a comment, note the parentheses are required)
 
-<details open><summary> Time Performance </summary> <blockquote>
+<details><summary> Time Performance </summary> <blockquote>
 Expected performance of common actions (not yet tested)
 
 #### Abbreviations

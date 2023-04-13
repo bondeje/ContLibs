@@ -108,6 +108,31 @@ type * type##_get(type * seq, size_t index) {   \
     return seq + index;                         \
 }                                               \
 
+#define declare_array_reversible(sequence_type)         \
+void sequence_type##_reverse(sequence_type * sizseq);   \
+
+#define define_array_reversible(sequence_type)                  \
+void sequence_type##_reverse(sequence_type * sizseq) {          \
+    if (!sizseq) {                                              \
+        return;                                                 \
+    }                                                           \
+    size_t N = sequence_type##_size(sizseq);                    \
+    if (N == 0) {                                               \
+        return;                                                 \
+    }                                                           \
+    unsigned char * start = (unsigned char*) sizseq;            \
+    unsigned char * stop = (unsigned char*) (sizseq + N - 1);  \
+                                                                \
+    size_t size = sizeof(sequence_type);                        \
+    sequence_type buffer;                                       \
+                                                                \
+	while (start < stop) {                                      \
+		cl_swap_buffered(start, stop, size, &buffer);            \
+		start += size;                                          \
+		stop -= size;                                           \
+	}                                                           \
+}                                                               \
+
 
 /* 
 this macro generates the header declarations for an array of type 'type', e.g. if your container 
@@ -135,6 +160,7 @@ type * type##IteratorIterator_next(type##Iterator *iter);                       
 enum iterator_status type##IteratorIterator_stop(type##Iterator *iter);                                 \
 size_t type##IteratorIterator_elem_size(type##Iterator *iter);                                          \
 declare_array_sequence(type)                                                                            \
+declare_array_reversible(type)                                                                          \
 
 declare_array_iterable(double)
 declare_array_iterable(float)
@@ -228,6 +254,7 @@ size_t type##IteratorIterator_elem_size(type##Iterator * iter) {                
     return sizeof(type);                                                                    \
 }                                                                                           \
 define_array_sequence(type)                                                                 \
+define_array_reversible(type)                                                               \
 
 #define for_each(insttype, inst, iterable_type, ...)								        \
 iterable_type##Iterator UNIQUE_VAR_NAME(inst##iterable_type);                                           \
@@ -298,6 +325,8 @@ if (new_obj##_capacity > comprehension_size) {                                  
 }                                                                                                       \
 }                                                                                                       \
 
+/*****************************Generic Iterating*******************************/
+
 // Iterator
 typedef struct Iterator {
     void * obj; // keeps track of the state of the iterator
@@ -317,17 +346,12 @@ iterable_type##Iterator UNIQUE_VAR_NAME(iterable_type);\
 iterable_type##Iterator_init(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);      \
 Iterator_init(piter_inst, (void*)&UNIQUE_VAR_NAME(iterable_type), (void* (*)(void*)) iterable_type##Iterator_next, (enum iterator_status (*)(void*)) iterable_type##Iterator_stop);\
 
+/********************0*************Filtering***********************************/
+
 typedef struct Filter {
     Iterator iter;
     bool (*func)(void*);
 } Filter, FilterIterator;
-
-/*
-typedef struct FilterIterator {
-    Filter * filt;
-    enum iterator_status stop;
-} FilterIterator;
-*/
 
 void Filter_init(Filter * filt, bool (*func)(void*), void * iter_obj, void * (*iter_next)(void*), enum iterator_status (*iter_stop)(void*));
 void * Filter_next(Filter * filt);
@@ -350,20 +374,9 @@ iterable_type##Iterator UNIQUE_VAR_NAME(iterable_type);\
 iterable_type##Iterator_init(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);\
 Filter_init(pfilter_obj, function, &UNIQUE_VAR_NAME(iterable_type), (void* (*)(void*))iterable_type##Iterator_next, (enum iterator_status (*)(void*))iterable_type##Iterator_stop)    \
 
-
+/**********************************Slicing************************************/
 
 #define SLICE_CORRECT_STEP_SIGN(start, stop, step) (start <= stop ? (step ? REFLECT_TO_POS(step) : 1) : (step ? REFLECT_TO_NEG(step) : -1))
-
-/*
-#define SLICE1(pslice_inst, sliceable_type, obj, size, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, 0, stop, 1)
-#define SLICE2(pslice_inst, sliceable_type, obj, size, start, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, start, stop, 1)
-#define SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, start, stop, step) SLICE3(pslice_inst, sliceable_type, obj, size, CYCLE_TO_POS(start, size), CYCLE_TO_POS(stop, size), step)
-#define SLICE3(pslice_inst, sliceable_type, obj, size, start, stop, step)\
-Slice_init(pslice_inst, (void*)obj, (void* (*)(void*, size_t))sliceable_type##_get, size, start, stop, SLICE_CORRECT_STEP_SIGN(start, stop, step))
-
-#define GET_SLICE_MACRO(_1,_2,_3,SLICE_MACRO,...) SLICE_MACRO
-#define slice(pslice_inst, sliceable_type, obj, size, ...) GET_SLICE_MACRO(__VA_ARGS__, SLICE3_HELPER, SLICE2, SLICE1, UNUSED)(pslice_inst, sliceable_type, obj, size, __VA_ARGS__)
-*/
 
 #define SLICE0(pslice_inst, sliceable_type, obj, size) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, 0, size, 1);
 #define SLICE1(pslice_inst, sliceable_type, obj, size, stop) SLICE3_HELPER(pslice_inst, sliceable_type, obj, size, 0, stop, 1)
@@ -374,7 +387,6 @@ Slice_init(pslice_inst, (void*)obj, (void* (*)(void*, size_t))sliceable_type##_g
 
 #define GET_SLICE_MACRO(_1,_2,_3,_4,SLICE_MACRO,...) SLICE_MACRO
 #define slice(pslice_inst, sliceable_type, obj, ...) GET_SLICE_MACRO(__VA_ARGS__, SLICE3_HELPER, SLICE2, SLICE1, SLICE0, UNUSED)(pslice_inst, sliceable_type, obj, __VA_ARGS__)
-
 
 // TODO: make SliceIterator an actual iterator
 typedef struct Slice {
@@ -395,83 +407,64 @@ void SliceIterator_init(SliceIterator * sl_iter, Slice * sl);
 void * SliceIterator_next(SliceIterator * sl_iter);
 enum iterator_status SliceIterator_stop(SliceIterator * sl_iter);
 
-/* TODO: reversed
-#define declare_array_reversible(sequence_type)\
-void sequence_type##_reverse(sequence_type * sizseq);
+/*********************************Reversing***********************************/
 
-#define define_array_reversible(sequence_type)                  \
-void sequence_type##_reverse(sequence_type * sizseq) {          \
-    if (!sizseq) {                                              \
-        return;                                                 \
-    }                                                           \
-    size_t N = sequence_type##_size(sizseq);                    \
-    if (N == 0) {                                               \
-        return;                                                 \
-    }                                                           \
-    unsigned char * start = (unsigned char*) sizseq;            \
-    unsignec char * stop = (unsigned char*) (sizeseq + N - 1);  \
-                                                                \
-    size_t size = sizeof(sequence_type);                        \
-    sequence_type buffer;                                       \
-                                                                \
-	while (start < stop) {                                      \
-		cl_swap_buffered(start, stop, size, &bufer);            \
-		start += size; // looks portable?!                      \
-		stop -= size; // looks portable?!                       \
-	}                                                           \
-}                                                               \
-
+// perform reverse iteration
+/*
+make a copy of the data structure, reverse it, then discard it
 #define reverse(reversible_type, inst)  \
 reversible_type##_reverse(inst);        \
 */
 
-/* TODO: enumerate
-
+/********************************Enumerating**********************************/
+/*
 #define ENUM_TYPE(index_name, type, name) struct enum_##index_name##name
 
 #define define_enum_type(index_name, type, name)\
-ENUM_TYPE(index_name, type, name) {
-    DECLARATION_STMTS(__VA_ARGS__)
-}
+ENUM_TYPE(index_name, type, name) { \
+    size_t index_name;\
+    type * name;\
+};\
 
 typedef struct EnumBase {
     size_t i;
     void * val;
-} EnumBase
+} EnumBase;
 
 typedef struct Enumerator {
     Iterator iter;
     EnumBase * next;
 } Enumerator, EnumeratorIterator;
 
-void Enumerator_init(Enumerate * en, void * obj, void * (*next) (void*), enum iterator_status (*stop)(void*)) {
+void Enumerator_init(Enumerator * en, void * obj, void * (*next) (void*), enum iterator_status (*stop)(void*)) {
     Iterator_init((Iterator *)en, obj, next, stop);
     en->next->i = 0;
-    en->next->val = NULL
+    en->next->val = (void*)&ENUM_BASE_VALUE_SENTINEL;
 }
 
-EnumBase * Enumerator_next(Enumerate * en) {
-    if (!en->next->val) {
-        en->next->i = 0;
-    } else {
+static int ENUM_BASE_VALUE_SENTINEL = 0;
+
+EnumBase * Enumerator_next(Enumerator * en) {
+    if (en->next->i || en->next->val != (void*)&ENUM_BASE_VALUE_SENTINEL) {
         en->next->i++;
     }
     en->next->val = Iterator_next((Iterator *) en);
-    if (en->next->val) {
-        return NULL;
-    }
     return en->next;
 }
 
-void EnumeratorIterator_init(EnumerateIterator * en_iter, Enumerate * en) {
+enum iterator_status Enumerator_stop(Enumerator * en) {
+    return Iterator_stop((Iterator*) en);
+}
+
+void EnumeratorIterator_init(EnumeratorIterator * en_iter, Enumerator * en) {
     Enumerator_init(en_iter, en->iter.obj, en->iter.next, en->iter.stop); // copy initialization
 }
 
-EnumBase * EnumeratorIterator_next(EnumerateIterator * en_iter) {
+EnumBase * EnumeratorIterator_next(EnumeratorIterator * en_iter) {
     return Enumerator_next(en_iter);
 }
 
-enum iterator_status EnumeratorIterator_stop(EnumerateIterator * en_iter) {
+enum iterator_status EnumeratorIterator_stop(EnumeratorIterator * en_iter) {
     return Iterator_stop((Iterator*)en_iter);
 }
 
@@ -479,25 +472,17 @@ enum iterator_status EnumeratorIterator_stop(EnumerateIterator * en_iter) {
 iterable_type##Iterator UNIQUE_VAR_NAME(iterable_type);\
 iterable_type##Iterator_init(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);      \
 Enumerator_init(penum_inst, (void*)&UNIQUE_VAR_NAME(iterable_type), (void* (*)(void*)) iterable_type##Iterator_next, (enum iterator_status (*)(void*)) iterable_type##Iterator_stop);\
-
 */
 
-/* // Some cool-ass macros we can do with Iterables
 // it is assumed poutput is a pointer to the correct type
-#define sum(type, poutput, iterable_type, ...)\
-Iterator UNIQUE_VAR_NAME(iterable_type);
-iterate(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);
-for_each(type, el, Iterator, UNIQUE_VAR_NAME(iterable_type)) {
-    *poutput += *el;
+#define sum(type, poutput, iterable_type, ...)      \
+for_each(type, el, iterable_type, __VA_ARGS__) {    \
+    *poutput += *el;                                \
 }
 
-#define product(type, poutput, iterable_type, ...)\
-Iterator UNIQUE_VAR_NAME(iterable_type);
-iterate(&UNIQUE_VAR_NAME(iterable_type), __VA_ARGS__);
-for_each(type, el, Iterator, UNIQUE_VAR_NAME(iterable_type)) {
-    *poutput *= *el;
-}
-*/
-
+#define product(type, poutput, iterable_type, ...)  \
+for_each(type, el, iterable_type, __VA_ARGS__) {    \
+    *poutput *= *el;                                \
+}                                                   \
 
 #endif // ITERATORS_H
