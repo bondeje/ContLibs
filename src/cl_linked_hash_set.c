@@ -20,19 +20,6 @@
 //static Node DEFAULT_NODE[DEFAULT_SIZE] = {'\0'}; // cannot do this because NodeAttributes_del(NA) expects NA->defaults to be NULL or heap-allocated
 #define DEFAULT_NODE Node_new(NA, 3, Node_attr(KEY), NULL, Node_attr(NEXT_INORDER), NULL, Node_attr(NEXT_INHASH), NULL)
 
-// set hash to NULL makes keys interpreted
-struct LinkedHashSet {
-    NodeAttributes * NA;
-    Node * head;
-    Node * tail;
-    Node ** bins;
-    size_t size; // number of elements in hash_set
-    size_t capacity; // allocation of hash_set, should be prime
-    float max_load_factor;
-    int (*comp) (const void *, const void *);
-    hash_t (*hash) (const void *, size_t);
-};
-
 size_t LinkedHashSet_size(LinkedHashSet * hash_set) {
     return hash_set->size;
 }

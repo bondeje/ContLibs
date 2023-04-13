@@ -24,9 +24,24 @@
 #define LINKED_HASH_TABLE_SCALE_FACTOR 2
 #endif
 
-//typedef struct DoubleLinkedHashNode DoubleLinkedHashNode;
-typedef struct LinkedHashTable LinkedHashTable;
-typedef struct DictItem DictItem;
+// set hash to NULL makes keys interpreted
+typedef struct LinkedHashTable {
+    NodeAttributes * NA;
+    Node * head;
+    Node * tail;
+    Node ** bins; // the bins for the table themselves cannot be a LinkedList because the linkages are RIGHT and not NEXT
+    size_t size; // number of elements in hash_table
+    size_t capacity; // allocation of hash_table, should be prime
+    float max_load_factor;
+    int (*comp) (const void *, const void *);
+    hash_t (*hash) (const void *, size_t);
+} LinkedHashTable;
+
+//used only for item iterator
+typedef struct DictItem {
+    const void * key;
+    void * value;
+} DictItem;
 
 typedef struct LinkedHashTableKeyIterator {
     NodeAttributes * NA;
@@ -44,16 +59,10 @@ typedef struct LinkedHashTableValueIterator {
 
 typedef struct LinkedHashTableItemIterator {
     NodeAttributes * NA;
+    DictItem next_item;
     Node * node;
-    DictItem * next_item;
     enum iterator_status stop;
 } LinkedHashTableItemIterator;
-
-//used only for item iterator
-struct DictItem {
-    const void * key;
-    void * value;
-};
 
 DictItem * DictItem_new(void * key, void * value);
 void DictItem_init(DictItem * di, void * key, void * value);

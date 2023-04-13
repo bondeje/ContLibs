@@ -50,12 +50,19 @@ Expected performance of common actions (not yet tested)
 
 *Do not `slice` linked strctures as the performance will be terrible. Instead `enumerate` them and skip the indices that you do not want.
 
-#### Sets and Mappings
+#### Sets
 
-| category | structure | short description | init | add | merge | size/<br/>is_empty | contains/<br/>find | get<br/> |
+| category | structure | short description | init | add | merge | size/<br/>is_empty | contains | pop |
 |---|---|---|---|---|---|---|---|---|
-| linked set |`LinkedHashSet`| iterable set of unique elements | O(M) | O(1) A/TRA | O(max(M, N+N')) TRA/NYI | O(1) | O(1) | N/A |
-| linked mapping |`LinkedHashTable`| iterable set of key/value mappings | O(M) | O(1) A/TRA |  O(max(M, N+N')) TRA/NYI | O(1) | O(1) | O(1) A |
+| linked set | `LinkedHashSet` | iterable set of unique elements | O(M) | O(1) A/TRA | O(max(M, N+N')) TRA/NYI | O(1) | O(1) | O(N) |
+| linked set | `DbleLinkedHashSet` | iterable set of key/value mappings | O(M) | O(1) A/TRA |  O(max(M, N+N')) TRA/NYI | O(1) | O(1) | O(1) |
+
+#### Mappings
+
+| category | structure | short description | init | set | merge | size/<br/>is_empty | contains | get<br/> | pop |
+|---|---|---|---|---|---|---|---|---|
+| linked mapping | `LinkedHashTable` | iterable set of key/value mappings | O(M) | O(1) A/TRA |  O(max(M, N+N')) TRA/NYI | O(1) | O(1) | O(1) A | O(N) |
+| linked mapping | `DblLinkedHashTable` | iterable set of key/value mappings | O(M) | O(1) A/TRA |  O(max(M, N+N')) TRA/NYI | O(1) | O(1) | O(1) A | O(1) |
 
 </blockquote></details>
 

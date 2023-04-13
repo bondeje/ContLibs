@@ -24,7 +24,18 @@
 #define LINKED_HASH_SET_SCALE_FACTOR 2
 #endif
 
-typedef struct LinkedHashSet LinkedHashSet;
+// set hash to NULL makes keys interpreted
+typedef struct LinkedHashSet {
+    NodeAttributes * NA;
+    Node * head;
+    Node * tail;
+    Node ** bins;
+    size_t size; // number of elements in hash_set
+    size_t capacity; // allocation of hash_set, should be prime
+    float max_load_factor;
+    int (*comp) (const void *, const void *);
+    hash_t (*hash) (const void *, size_t);
+} LinkedHashSet;
 
 typedef struct LinkedHashSetIterator {
     NodeAttributes * NA;

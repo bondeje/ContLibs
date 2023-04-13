@@ -19,19 +19,6 @@
 // TODO: replace with a default NodeAttributes, DefaultNode at file scope
 #define DEFAULT_NODE Node_new(NA, 4, Node_attr(VALUE), NULL, Node_attr(KEY), NULL, Node_attr(NEXT_INORDER), NULL, Node_attr(NEXT_INHASH), NULL)//, Node_attr(PREV_INORDER), NULL
 
-// set hash to NULL makes keys interpreted
-struct LinkedHashTable {
-    NodeAttributes * NA;
-    Node * head;
-    Node * tail;
-    Node ** bins; // the bins for the table themselves cannot be a LinkedList because the linkages are RIGHT and not NEXT
-    size_t size; // number of elements in hash_table
-    size_t capacity; // allocation of hash_table, should be prime
-    float max_load_factor;
-    int (*comp) (const void *, const void *);
-    hash_t (*hash) (const void *, size_t);
-};
-
 /* INTERNAL SETTINGS */
 
 DictItem * DictItem_new(void * key, void * value) {
@@ -348,12 +335,6 @@ LinkedHashTableItemIterator * LinkedHashTableItemIterator_new(LinkedHashTable * 
     if (!item_iter) {
         return NULL;
     }
-
-    item_iter->next_item = DictItem_new(NULL, NULL);
-    if (!item_iter->next_item) {
-        CL_FREE(item_iter);
-        return NULL;
-    }
     LinkedHashTableItemIterator_init(item_iter, hash_table);
     return item_iter;
 }
@@ -370,8 +351,7 @@ void LinkedHashTableValueIterator_init(LinkedHashTableValueIterator * value_iter
     value_iter->stop = ITERATOR_GO;
 }
 void LinkedHashTableItemIterator_init(LinkedHashTableItemIterator * item_iter, LinkedHashTable * hash_table) {
-    item_iter->next_item->key = NULL;
-    item_iter->next_item->value = NULL;
+    DictItem_init(&item_iter->next_item, NULL, NULL);
     item_iter->node = hash_table->head;
     item_iter->NA = hash_table->NA;
     item_iter->stop = ITERATOR_GO;
@@ -389,8 +369,6 @@ void LinkedHashTableValueIterator_del(LinkedHashTableValueIterator * value_iter)
     CL_FREE(value_iter);
 }
 void LinkedHashTableItemIterator_del(LinkedHashTableItemIterator * item_iter) {
-    DictItem_del(item_iter->next_item);
-    item_iter->next_item = NULL;
     item_iter->node = NULL;
     item_iter->NA = NULL;
     CL_FREE(item_iter);
@@ -428,10 +406,10 @@ DictItem * LinkedHashTableItemIterator_next(LinkedHashTableItemIterator * item_i
         item_iter->stop = ITERATOR_STOP;
         return NULL;
     }
-    item_iter->next_item->key = Node_get(item_iter->NA, item_iter->node, KEY);
-    item_iter->next_item->value = Node_get(item_iter->NA, item_iter->node, VALUE);
+    item_iter->next_item.key = Node_get(item_iter->NA, item_iter->node, KEY);
+    item_iter->next_item.value = Node_get(item_iter->NA, item_iter->node, VALUE);
     item_iter->node = Node_get(item_iter->NA, item_iter->node, NEXT_INORDER);
-    return item_iter->next_item;
+    return &item_iter->next_item;
 }
 enum iterator_status LinkedHashTableKeyIterator_stop(LinkedHashTableKeyIterator * key_iter) {
     if (!key_iter) {
