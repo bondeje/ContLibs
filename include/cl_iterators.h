@@ -108,6 +108,7 @@ type * type##_get(type * seq, size_t index) {   \
     return seq + index;                         \
 }                                               \
 
+/*
 #define declare_array_reversible(sequence_type)         \
 void sequence_type##_reverse(sequence_type * sizseq);   \
 
@@ -132,7 +133,7 @@ void sequence_type##_reverse(sequence_type * sizseq) {          \
 		stop -= size;                                           \
 	}                                                           \
 }                                                               \
-
+*/
 
 /* 
 this macro generates the header declarations for an array of type 'type', e.g. if your container 
@@ -160,7 +161,6 @@ type * type##IteratorIterator_next(type##Iterator *iter);                       
 enum iterator_status type##IteratorIterator_stop(type##Iterator *iter);                                 \
 size_t type##IteratorIterator_elem_size(type##Iterator *iter);                                          \
 declare_array_sequence(type)                                                                            \
-declare_array_reversible(type)                                                                          \
 
 declare_array_iterable(double)
 declare_array_iterable(float)
@@ -254,7 +254,6 @@ size_t type##IteratorIterator_elem_size(type##Iterator * iter) {                
     return sizeof(type);                                                                    \
 }                                                                                           \
 define_array_sequence(type)                                                                 \
-define_array_reversible(type)                                                               \
 
 #define for_each(insttype, inst, iterable_type, ...)								        \
 iterable_type##Iterator UNIQUE_VAR_NAME(inst##iterable_type);                                           \
