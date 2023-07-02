@@ -3,7 +3,7 @@
 #include "cl_hash_utils.h"
 
 hash_t cstr_hash(const void * key, size_t bin_size) {
-    unsigned long hash = 5381;
+    unsigned long long hash = 5381;
     int c;
     unsigned char * str = (unsigned char *) key;
 

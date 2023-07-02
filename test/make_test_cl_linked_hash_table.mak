@@ -25,6 +25,8 @@ else
     UNAME_S := $(shell uname -s)
 	# for dynamic memory allocation extensions in posix, e.g. getline()
 	CFLAGS += -D__STDC_WANT_LIB_EXT2__=1
+    # really cool, -g creates symbols so that valgrind will actually show you the lines of errors
+    CFLAGS += -g
     ifeq ($(UNAME_S),Linux)
 		# needed because linux must link to the math
 		LFLAGS += -lm

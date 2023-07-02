@@ -5,6 +5,22 @@
 #ifndef CL_LINKED_LIST_H
 #define CL_LINKED_LIST_H
 
+/*
+// TODO: generic advance and retreat functions to allow customizable navigation with modifications for doubly linked
+adding NEXT attribute to LInkedList data structure
+LinkedList_set_NEXT(LinkedList * ll, int NEXT_attribute) {
+    ll->NEXT = NEXT_attribute; // e.g. NODE_NEXT, NODE_PREV
+}
+Node * LinkedList_move(LinkedList * ll, Node * current, int attribute, long long step) {
+    if (step > 0) {
+        move forward in linked list
+    } else if (step < 0) {
+        move backward in linked list
+    }
+    return current;
+}
+*/
+
 typedef struct LinkedList {
     NodeAttributes * NA;
     Node * head;

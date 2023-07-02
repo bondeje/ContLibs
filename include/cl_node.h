@@ -5,6 +5,14 @@
 #ifndef CL_NODE_H
 #define CL_NODE_H
 
+/*
+// TODO:
+void Node_patch(NodeAttributes * NA, Node * A, int attr_A, Node * B, int attr_B) {
+    Node_set(NA, A, attr_A, B);
+    Node_set(NA, B, attr_B, A);
+}
+*/
+
 #ifndef NODE_N_ATTR // allows define outside this header
 #define NODE_N_ATTR			    16
 #endif // NODE_N_ATTR

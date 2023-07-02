@@ -7,14 +7,8 @@
 
 #define REQUIRED_NODE_FLAGS Node_flag(LEFT) | Node_flag(RIGHT))
 
-#define DEFAULT_NODE Node_new(NA, 2, Node_attr(RIGHT), NULL, Node_attr(LEFT), NULL)
+#define DEFAULT_NODE Node_new(NA, 3, Node_attr(VALUE), NULL, Node_attr(RIGHT), NULL, Node_attr(LEFT), NULL)
 
-struct LinkedBinaryTree {
-    Node * head;
-    NodeAttributes * NA;
-    size_t size;
-    int (*compare) (Node_type(KEY), Node_type(KEY)); // must be NULL if KEY is not a flag in the tree
-};
 
 static Node * move(NodeAttributes * NA, Node * node, int dir) {
 	if (dir == DIR_LEFT) {
@@ -25,14 +19,13 @@ static Node * move(NodeAttributes * NA, Node * node, int dir) {
 	return NULL;
 }
 
-void LinkedBinaryTree_init(LinkedBinaryTree * lbt, int (*compare) (Node_type(KEY), Node_type(KEY)), NodeAttributes * NA) {
-    lbt->head = NULL;
+void LinkedBinaryTree_init(LinkedBinaryTree * lbt, NodeAttributes * NA) {
+    lbt->root = NULL;
     lbt->NA = NA;
     lbt->size = 0;
-    lbt->compare = compare;
 }
 
-LinkedBinaryTree * vLinkedBinaryTree_new(int (*compare) (Node_type(KEY), Node_type(KEY)), unsigned int node_flags, int narg_pairs, va_list args) {
+LinkedBinaryTree * vLinkedBinaryTree_new(unsigned int node_flags, int narg_pairs, va_list args) {
     LinkedBinaryTree * lbt = (LinkedBinaryTree *) CL_MALLOC(sizeof(LinkedBinaryTree));
     if (!lbt) {
         return NULL;
@@ -52,15 +45,15 @@ LinkedBinaryTree * vLinkedBinaryTree_new(int (*compare) (Node_type(KEY), Node_ty
         NA->default_alloc = true;
     }
 
-    LinkedBinaryTree_init(lbt, compare, NA);
+    LinkedBinaryTree_init(lbt, NA);
 
     return lbt;
 }
 
-LinkedBinaryTree * LinkedBinaryTree_new(int (*compare) (Node_type(KEY), Node_type(KEY)), unsigned int node_flags, int narg_pairs, ...) {
+LinkedBinaryTree * LinkedBinaryTree_new(unsigned int node_flags, int narg_pairs, ...) {
     va_list args;
     va_start(args, narg_pairs);
-    LinkedBinaryTree * lbt = vLinkedBinaryTree_new(compare, node_flags, narg_pairs, args);
+    LinkedBinaryTree * lbt = vLinkedBinaryTree_new(node_flags, narg_pairs, args);
     va_end(args);
 }
 
@@ -73,8 +66,8 @@ void Node_del_recursive(NodeAttributes * NA, Node * node) {
 }
 
 void LinkedBinaryTree_del(LinkedBinaryTree * lbt) {
-    Node_del_recursive(lbt->NA, lbt->head);
-    lbt->head = NULL;
+    Node_del_recursive(lbt->NA, lbt->root);
+    lbt->root = NULL;
     if (lbt->NA) { // DEFAULT_NODE_ATTRIBUTES is statically allocated
         CL_FREE(lbt->NA);
     }
@@ -100,7 +93,7 @@ size_t LinkedBinaryTree_size(LinkedBinaryTree * lbt) {
 }
 
 size_t LinkedBinaryTree_subtree_size(LinkedBinaryTree * lbt, Node * node) {
-	if (node == lbt->head) {
+	if (node == lbt->root) {
 		return lbt->size;
 	}
 	if (node) {

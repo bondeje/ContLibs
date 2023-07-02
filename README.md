@@ -52,14 +52,14 @@ Expected performance of common actions (not yet tested)
 
 #### Sets
 
-| category | structure | short description | init | add | merge | size/<br/>is_empty | contains | pop |
+| category | structure | short description | init | add | merge | size/<br/>is_empty | contains | pop/remove |
 |---|---|---|---|---|---|---|---|---|
 | linked set | `LinkedHashSet` | iterable set of unique elements | O(M) | O(1) A/TRA | O(max(M, N+N')) TRA/NYI | O(1) | O(1) | O(N) |
 | linked set | `DbleLinkedHashSet` | iterable set of key/value mappings | O(M) | O(1) A/TRA |  O(max(M, N+N')) TRA/NYI | O(1) | O(1) | O(1) |
 
 #### Mappings
 
-| category | structure | short description | init | set | merge | size/<br/>is_empty | contains | get<br/> | pop |
+| category | structure | short description | init | set | merge | size/<br/>is_empty | contains | get<br/> | pop/remove |
 |---|---|---|---|---|---|---|---|---|
 | linked mapping | `LinkedHashTable` | iterable set of key/value mappings | O(M) | O(1) A/TRA |  O(max(M, N+N')) TRA/NYI | O(1) | O(1) | O(1) A | O(N) |
 | linked mapping | `DblLinkedHashTable` | iterable set of key/value mappings | O(M) | O(1) A/TRA |  O(max(M, N+N')) TRA/NYI | O(1) | O(1) | O(1) A | O(1) |

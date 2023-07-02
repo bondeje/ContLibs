@@ -5,7 +5,7 @@
 #include "cl_core.h"
 #include "cl_node.h"
 #include "cl_tree_utils.h"
-#include "cl_deque.h"
+#include "cl_circular_buffer.h"
 #include "cl_tuple.h"
 #include "cl_array_binary_tree.h"
 
